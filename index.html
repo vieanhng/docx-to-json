@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ chuyển Word sang JSON</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- MathJax CSS for math rendering -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Công cụ chuyển Word sang JSON</h1>
+            <p class="subtitle">Tải lên và chỉnh sửa dữ liệu JSON với công thức toán học</p>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-item">
+                <span id="questionCount" class="stat-value">0</span>
+                <span class="stat-label">Số lượng câu</span>
+            </div>
+            <div class="stat-item">
+                <span id="mcCount" class="stat-value">0</span>
+                <span class="stat-label">Trắc nghiệm</span>
+            </div>
+            <div class="stat-item">
+                <span id="tfCount" class="stat-value">0</span>
+                <span class="stat-label">Đúng/Sai</span>
+            </div>
+            <div class="stat-item">
+                <span id="fillCount" class="stat-value">0</span>
+                <span class="stat-label">Điền chỗ trống</span>
+            </div>
+        </div>
+        
+        <div class="floating-action-button">
+            <button id="fabToggleBtn" class="btn btn-primary fab-toggle-btn">
+                <i class="fas fa-magic"></i>
+            </button>
+            <div id="fabDropdown" class="fab-dropdown-content">
+                <div class="batch-actions">
+                    <div class="batch-actions-header">
+                        <span>Công cụ</span>
+                    </div>
+                    <div class="batch-actions-content">              
+                        <div class="batch-action-group">
+                            <div class="batch-action-title">Tạo hàng loạt bằng AI cho các câu được chọn</div>
+                            <div class="batch-action-buttons">
+                                <button id="batchGenerateSolutionBtn" class="btn-generate-all">
+                                    <i class="fas fa-magic"></i> Tạo lời giải
+                                </button>
+                                <button id="batchGenerateHintBtn" class="btn-generate-all">
+                                    <i class="fas fa-magic"></i> Tạo gợi ý
+                                </button>
+                                <button id="batchGenerateActionWordsBtn" class="btn-generate-all">
+                                    <i class="fas fa-magic"></i> Tạo động từ
+                                </button>
+                                <button id="batchGenerateTagsBtn" class="btn-generate-all">
+                                    <i class="fas fa-magic"></i> Tạo thẻ
+                                </button>
+                            </div>
+                        </div>
+                        <div class="batch-action-group">
+                            <div class="batch-action-title">Số hóa</div>
+                            <div class="batch-action-buttons">
+                                <button id="digitize" class="btn-generate-all">
+                                    <i class="fas fa-magic"></i> Số hóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer" class="error-container">
+            <div class="message-title">
+                <i class="fas fa-exclamation-circle error-icon"></i>
+                Lỗi
+            </div>
+            <ul id="errorList" class="error-list"></ul>
+        </div>
+
+        <div id="warningContainer" class="warning-container">
+            <div class="message-title">
+                <i class="fas fa-exclamation-triangle warning-icon"></i>
+                Cảnh báo
+            </div>
+            <ul id="warningList" class="warning-list"></ul>
+        </div>
+
+        <div id="successContainer" class="success-container">
+            <div class="message-title">
+                <i class="fas fa-check-circle success-icon"></i>
+                Thành công
+            </div>
+            <p id="successMessage" class="success-message"></p>
+        </div>
+
+        <div class="main-container">
+            <div class="editor-container">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-code"></i>
+                        <span>Chỉnh sửa JSON</span>
+                    </div>
+                    <div class="panel-actions">
+                        <div class="math-toggle">
+                            <span>Hiển thị công thức toán</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="mathToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <button id="formatBtn" class="btn-secondary">
+                            <i class="fas fa-align-left"></i>
+                            Định dạng
+                        </button>
+                        <button id="applyBtn" class="btn-primary">
+                            <i class="fas fa-check"></i>
+                            Validate
+                        </button>
+                        <button id="downloadJsonBtn" class="btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Tải xuống JSON
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="file-upload-container" id="fileUploadContainer">
+                <label for="fileInput" class="file-upload-label">
+                    <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+                    <p class="file-upload-text">Kéo thả file JSON hoặc Word (.docx) vào đây hoặc nhấn để chọn file</p>
+                </label>
+                <input type="file" id="fileInput" accept=".json,.docx">
+                        <div class="file-info" id="fileInfo">
+                            <div class="file-info-name" id="fileName"></div>
+                            <div class="file-info-size" id="fileSize"></div>
+                        </div>
+                    </div>
+                    <div class="editor-content">
+                        <textarea id="jsonEditor" placeholder="Nội dung JSON sẽ hiển thị ở đây sau khi tải lên..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-container">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-eye"></i>
+                        <span>Xem trước</span>
+                    </div>
+                    <div class="panel-actions">
+                    <button id="toggleEditorBtn" class="btn-secondary">
+                        <i class="fas fa-code"></i>
+                        Hiển thị/Ẩn JSON
+                    </button>
+                    <button id="selectAllBtn" class="btn-secondary">
+                        <i class="fas fa-check-double"></i>
+                        Chọn tất cả
+                    </button>
+                </div>
+                </div>
+                <div class="panel-content">
+                    <div id="previewContainer" class="preview-content">
+                        <div class="empty-state">
+                            <i class="fas fa-file-alt"></i>
+                            <p>Xem trước dữ liệu sẽ hiển thị ở đây</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing questions -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Chỉnh sửa câu hỏi</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="editType">Loại câu hỏi</label>
+                    <select id="editType" class="form-control">
+                        <option value="MC">Trắc nghiệm (MC)</option>
+                        <option value="MMC">Trắc nghiệm nhiều đáp án (MMC)</option>
+                        <option value="TF">Đúng/Sai (TF)</option>
+                        <option value="SA">Điền vào chỗ trống (SA)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editQuestion">Nội dung câu hỏi</label>
+                    <textarea id="editQuestion" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div id="mcOptionsContainer">
+                    <div class="form-group">
+                        <label class="form-label">Lựa chọn</label>
+                        <div id="optionsContainer">
+                            <!-- Options will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addOptionBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm lựa chọn
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="editCorrectAnswer">Đáp án đúng</label>
+                        <div id="correctAnswersContainer">
+                            <!-- Correct answer checkboxes will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tfStatementsContainer" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Khẳng định</label>
+                        <div id="statementsContainer">
+                            <!-- Statements will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addStatementBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm khẳng định
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="editCorrectAnswerTF">Đáp án đúng</label>
+                        <div id="correctAnswersContainerTF">
+                            <!-- Correct answer checkboxes will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="fillAnswerContainer" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="editAnswer">Đáp án</label>
+                        <input type="text" id="editAnswer" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editDifficultLevel">Mức độ</label>
+                    <input type="text" id="editDifficultLevel" class="form-control" placeholder="Ví dụ: Dễ, Trung bình, Khó">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Kỹ năng</label>
+                    <div id="skillsMultiSelect" class="multi-select">
+                        <div class="multi-select-trigger">
+                            <span>Chọn kỹ năng</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown">
+                            <div class="multi-select-search">
+                                <input type="text" class="form-control search-input" placeholder="Tìm kiếm kỹ năng...">
+                            </div>
+                            <div class="multi-select-options">
+                                <!-- Skills options will be dynamically added here -->
+                            </div>
+                        </div>
+                        <div class="multi-select-tags">
+                            <!-- Selected skills will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label-with-action">
+                        <label class="form-label">Động từ chỉ thị</label>
+                        <button type="button" id="generateActionWordsBtn" class="btn-generate">
+                            <i class="fas fa-magic"></i> Tạo bằng AI
+                        </button>
+                    </div>
+                    <div id="actionWordsMultiSelect" class="multi-select">
+                        <div class="multi-select-trigger">
+                            <span>Chọn động từ chỉ thị</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown">
+                            <div class="multi-select-search">
+                                <input type="text" class="form-control search-input" placeholder="Tìm kiếm động từ...">
+                            </div>
+                            <div class="multi-select-options">
+                                <!-- Action words options will be dynamically added here -->
+                            </div>
+                        </div>
+                        <div class="multi-select-tags">
+                            <!-- Selected action words will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label-with-action">
+                        <label class="form-label" for="editSolution">Lời giải chi tiết</label>
+                        <button type="button" id="generateSolutionBtn" class="btn-generate">
+                            <i class="fas fa-magic"></i> Tạo bằng AI
+                        </button>
+                    </div>
+                    <textarea id="editSolution" class="form-control" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label-with-action">
+                        <label class="form-label" for="editHint">Gợi ý</label>
+                        <button type="button" id="generateHintBtn" class="btn-generate">
+                            <i class="fas fa-magic"></i> Tạo bằng AI
+                        </button>
+                    </div>
+                    <textarea id="editHint" class="form-control" rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-label-with-action">
+                        <label class="form-label" for="editTags">Thẻ (ngăn cách bằng dấu chấm phẩy)</label>
+                        <button type="button" id="generateTagsBtn" class="btn-generate">
+                            <i class="fas fa-magic"></i> Tạo bằng AI
+                        </button>
+                    </div>
+                    <input type="text" id="editTags" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelEditBtn" class="btn-secondary">Hủy</button>
+                <button type="button" id="saveEditBtn" class="btn-primary">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MathJax JS for math rendering -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$']],
+            displayMath: [['$$', '$$']],
+            processEscapes: true,
+            packages: ['base', 'ams', 'noerrors', 'noundefined', 'newcommand', 'boldsymbol']
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code','img'],
+            ignoreHtmlClass: 'tex2jax_ignore',
+            processHtmlClass: 'tex2jax_process'
+        }
+    };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
