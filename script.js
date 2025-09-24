@@ -1992,8 +1992,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Xử lý sự kiện
     formatBtn.addEventListener('click', formatJSON);
     applyBtn.addEventListener('click', () => {
-    validateAndRender();
-
         applyChanges();
         saveJsonToLocalStorage(); // Save after applying changes
     });
