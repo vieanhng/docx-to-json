@@ -1599,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].hint = hint;
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updatePreview();
+                    updatePreview();                    
                 }
             }
 
@@ -1952,6 +1952,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewItem.innerHTML = html;
                 previewContainer.appendChild(previewItem);
                     // Thêm event listener cho từng checkbox
+                    updateSelectAllButtonState();
     document.querySelectorAll('.question-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', updateSelectAllButtonState);
     });
