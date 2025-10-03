@@ -109,11 +109,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return "";
         }
 
-        let textOnly = htmlString.replace(/<.*?>/g, '');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlString;
 
-        textOnly = textOnly.replace(/\s+/g, ' ').trim();
-
-        return textOnly;
+        const text = tempDiv.textContent || tempDiv.innerText || '';
+        tempDiv.remove();
+        return text.replace(/\s+/g, ' ').trim();
     }
 
     // Fetch data from JSON files
