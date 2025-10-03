@@ -784,6 +784,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function getSelectedData(){
+        const checkboxes = document.querySelectorAll('.question-checkbox');
+        const selectedData = [];
+        const parsedData = JSON.parse(jsonEditor.value);
+
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const questionIndex = cb.dataset.index;
+                selectedData.push(parsedData[questionIndex]);
+            }
+        });
+
+        return selectedData;
+    }
+
     function selectAllQuestions() {
         const checkboxes = document.querySelectorAll('.question-checkbox');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
@@ -2077,6 +2092,192 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Close the dropdown if the user clicks outside of it
+// Digitize Modal functionality
+    const digitizeBtn = document.getElementById('digitize');
+    const digitizeModal = document.getElementById('digitizeModal');
+    const digitizeModalClose = document.getElementById('digitizeModalClose');
+    const digitizeStep1 = document.getElementById('digitizeStep1');
+    const digitizeStep2 = document.getElementById('digitizeStep2');
+    const digitizeStep3 = document.getElementById('digitizeStep3');
+    const digitizeLoginBtn = document.getElementById('digitizeLoginBtn');
+    const digitizeVerifyLinkBtn = document.getElementById('digitizeVerifyLinkBtn');
+    const digitizeConfirmBtn = document.getElementById('digitizeConfirmBtn');
+    const digitizeBackToStep1Btn = document.getElementById('digitizeBackToStep1Btn');
+    const digitizeBackToStep2Btn = document.getElementById('digitizeBackToStep2Btn');
+
+    let currentDigitizeStep = 2;
+
+    function showDigitizeStep(step) {
+        digitizeStep1.style.display = 'none';
+        digitizeStep2.style.display = 'none';
+        digitizeStep3.style.display = 'none';
+
+        if (step === 1) {
+            digitizeStep1.style.display = 'block';
+        } else if (step === 2) {
+            digitizeStep2.style.display = 'block';
+        } else if (step === 3) {
+            digitizeStep3.style.display = 'block';
+        }
+        currentDigitizeStep = step;
+    }
+
+    function checkLogin() {
+        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/check-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: localStorage.getItem('token'),
+                uiid: localStorage.getItem('uiid'),
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('Login successful');
+                showDigitizeStep(2);
+            } else {
+                // Show login modal if not logged in
+                digitizeModal.style.display = 'flex';
+                showDigitizeStep(1);
+            }
+        })
+        .catch(error => {
+            showErrors([error.message]);
+        });
+    }
+
+    digitizeBtn.addEventListener('click', () => {
+        if (checkLogin()) {
+            // User is logged in, proceed with digitization
+
+            showDigitizeStep(2);
+            digitizeModal.style.display = 'flex';
+        } else {
+            // Show login modal if not logged in
+            digitizeModal.style.display = 'flex';
+            showDigitizeStep(1);
+        }
+    });
+
+    digitizeModalClose.addEventListener('click', () => {
+        digitizeModal.style.display = 'none';
+    });
+
+    digitizeLoginBtn.addEventListener('click', () => {
+        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/login-lms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                u: document.getElementById('digitizeUsername').value,
+                p: document.getElementById('digitizePassword').value
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store user info in localStorage
+                    localStorage.setItem('username', document.getElementById('digitizeUsername').value);
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('uiid', data.uiid);
+
+                    // Show success message
+                    showSuccess('Login successful');
+                    showDigitizeStep(2);
+                } else {
+                    throw new Error(data.message || 'Login failed');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+        console.log('Login clicked');
+    });
+
+    digitizeVerifyLinkBtn.addEventListener('click', () => {
+        const token = localStorage.getItem('token');
+        const uiid = localStorage.getItem('uiid');
+        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/find-bank', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                link: document.getElementById('digitizeBankLink').value,
+                uiid: uiid,
+                token: token,
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store user info in localStorage
+                    localStorage.setItem('bank', data.name);
+                    localStorage.setItem('bank_iid', data.iid);
+
+                    // Show success message
+                    document.getElementById('digitizeBankName').textContent = data.name;
+                    console.log('Digitize confirmed');
+                    showDigitizeStep(3);
+
+                } else {
+                    throw new Error(data.message || 'Failed to find bank');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+        console.log('Verify link clicked');
+    });
+
+    digitizeConfirmBtn.addEventListener('click', () => {
+        digitizeModal.style.display = 'none';
+        showSuccess("Đang tiến hành số hóa...");
+        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/sohoa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "bank": localStorage.getItem('bank_iid'),
+                "token": localStorage.getItem('token'),
+                "uiid": localStorage.getItem('uiid'),
+                "questions": getSelectedData()
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Số hóa thành công');
+                    showDigitizeStep(4);
+
+                } else {
+                    throw new Error(data.message || 'Số hóa thất bại');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+    });
+
+    digitizeBackToStep1Btn.addEventListener('click', () => {
+        showDigitizeStep(1);
+    });
+
+    digitizeBackToStep2Btn.addEventListener('click', () => {
+        showDigitizeStep(2);
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == digitizeModal) {
+            digitizeModal.style.display = 'none';
+        }
+    });
+
     window.addEventListener('click', (event) => {
         if (!fabToggleBtn.contains(event.target) && !fabDropdown.contains(event.target)) {
             fabDropdown.classList.remove('show');
