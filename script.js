@@ -1826,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (item.type === 'SA') {
                     html += `
                                 <div class="preview-answer">
-                                    <strong>Đáp án:</strong> ${renderMathInText(item.answers || 'Không có')}
+                                    <strong>Đáp án:</strong> ${JSON.stringify(item.answers)}
                                 </div>
                             `;
                 }
