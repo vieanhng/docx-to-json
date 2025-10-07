@@ -1840,7 +1840,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (item.type === 'SA') {
                     html += `
                                 <div class="preview-answer">
-                                    <strong>Đáp án:</strong> ${renderMathInText(item.answers || 'Không có')}
+                                    <strong>Đáp án:</strong> ${JSON.stringify(item.answers)}
                                 </div>
                             `;
                 }
@@ -2123,7 +2123,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function checkLogin() {
-        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/check-user', {
+        fetch('http://localhost:5678/webhook/check-user', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2167,7 +2167,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     digitizeLoginBtn.addEventListener('click', () => {
-        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/login-lms', {
+        fetch('http://localhost:5678/webhook/login-lms', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2201,7 +2201,7 @@ document.addEventListener('DOMContentLoaded', function () {
     digitizeVerifyLinkBtn.addEventListener('click', () => {
         const token = localStorage.getItem('token');
         const uiid = localStorage.getItem('uiid');
-        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/find-bank', {
+        fetch('http://localhost:5678/webhook/find-bank', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2237,7 +2237,7 @@ document.addEventListener('DOMContentLoaded', function () {
     digitizeConfirmBtn.addEventListener('click', () => {
         digitizeModal.style.display = 'none';
         showSuccess("Đang tiến hành số hóa...");
-        fetch('https://f0z8j89wdex1-deploy.space.z.ai/api/sohoa', {
+        fetch('http://localhost:5678/webhook/sohoa-img', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2246,7 +2246,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 "bank": localStorage.getItem('bank_iid'),
                 "token": localStorage.getItem('token'),
                 "uiid": localStorage.getItem('uiid'),
-                "questions": getSelectedData()
+                "questions": JSON.parse(jsonEditor.value)
             })
         })
             .then(response => response.json())
