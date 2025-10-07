@@ -1717,6 +1717,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function renderAnswerPositions(answers) {
+        let html = '<div class="answer-positions">';
+
+        answers.forEach((answerGroup, index) => {
+            const position = index + 1;
+            const answersText = answerGroup.join(', ');
+            html += `
+      <div class="answer-item">
+        Vị trí ${position} đáp án: <strong>${escapeHtml(answersText)}</strong>
+      </div>
+    `;
+        });
+
+        html += '</div>';
+        return html;
+    }
+
     // Cập nhật xem trước
     function updatePreview() {
         try {
@@ -1826,7 +1849,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (item.type === 'SA') {
                     html += `
                                 <div class="preview-answer">
-                                    <strong>Đáp án:</strong> ${JSON.stringify(item.answers)}
+                                    <strong>Đáp án:</strong> 
+                                    ${renderAnswerPositions(item.answers)}
                                 </div>
                             `;
                 }
