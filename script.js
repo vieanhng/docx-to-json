@@ -300,12 +300,12 @@ document.addEventListener('DOMContentLoaded', function () {
             body: formData
         })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Lỗi khi gửi file Word');
-                }
                 return response.json();
             })
             .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
                 // Xử lý dữ liệu JSON trả về nhưng không hiển thị trong trình soạn thảo
                 jsonEditor.value = JSON.stringify(data.data, null, 2);
                 // Ẩn phần soạn thảo JSON và tập trung vào phần xem trước
