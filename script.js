@@ -129,6 +129,48 @@ document.addEventListener('DOMContentLoaded', function () {
         return text.replace(/\s+/g, ' ').trim();
     }
 
+    const LATEX_REPLACEMENTS = [
+        { find: '\\\\frac', replace: '\\dfrac' },
+    ];
+
+
+    const replaceLatexCommands = (text) => {
+        if (typeof text !== 'string') {
+            return text;
+        }
+
+        // Hàm thay thế bên trong một khối LaTeX
+        const processLatexBlock = (latex) => {
+            let processed = LATEX_REPLACEMENTS.reduce((current, rule) => {
+                // Lưu ý: trong chuỗi JS, '\\' phải viết là '\\\\' để đại diện cho '\'
+                // Nhưng khi dùng RegExp, ta cần escape backslash: nên rule.find đã là '\\\\frac'
+                const regex = new RegExp(rule.find, 'g');
+                return current.replace(regex, rule.replace);
+            }, latex);
+
+            // Kiểm tra nếu khối chứa \int, \lim, hoặc \underset
+            // và chưa có \displaystyle ở đầu
+            if (/\\(int|lim|underset)\b/.test(processed) && !/^\s*\\displaystyle/.test(processed)) {
+                processed = '\\displaystyle ' + processed;
+            }
+
+            return processed;
+        };
+
+        // Tìm và thay thế chỉ trong các khối LaTeX: \(...\), \[...\], $...$, $$...$$
+        // Ưu tiên $$...$$ trước $...$ để tránh xung đột
+        return text
+            // Xử lý display math: $$...$$
+            .replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                return '$$' + processLatexBlock(content) + '$$';
+            })
+            // Xử lý inline math: $...$ (không cho phép xuống dòng)
+            .replace(/\$([^\n]*?)\$/g, (match, content) => {
+                return '$' + processLatexBlock(content) + '$';
+            })
+    };
+
+
     // Fetch data from JSON files
     async function fetchJSONData() {
         try {
@@ -1824,7 +1866,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Cập nhật hint vào mảng data
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
-                    jsonEditorValue[index].hint = hint;
+                    jsonEditorValue[index].hint = replaceLatexCommands(hint);
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
                     updatePreview();
                 }
@@ -2387,8 +2429,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fabDropdown.classList.toggle('show');
     });
 
-    // Close the dropdown if the user clicks outside of it
-    // Digitize Modal functionality
+    // ============================================
+    // DIGITIZE MODAL - Optimized Logic
+    // ============================================
+
     const digitizeBtn = document.getElementById('digitize');
     const digitizeModal = document.getElementById('digitizeModal');
     const digitizeModalClose = document.getElementById('digitizeModalClose');
@@ -2401,172 +2445,237 @@ document.addEventListener('DOMContentLoaded', function () {
     const digitizeBackToStep1Btn = document.getElementById('digitizeBackToStep1Btn');
     const digitizeBackToStep2Btn = document.getElementById('digitizeBackToStep2Btn');
 
-    let currentDigitizeStep = 2;
-
-    function showDigitizeStep(step) {
-        digitizeStep1.style.display = 'none';
-        digitizeStep2.style.display = 'none';
-        digitizeStep3.style.display = 'none';
-
-        if (step === 1) {
-            digitizeStep1.style.display = 'block';
-        } else if (step === 2) {
-            digitizeStep2.style.display = 'block';
-        } else if (step === 3) {
-            digitizeStep3.style.display = 'block';
+    // Digitize state management
+    const digitizeState = {
+        currentStep: 1,
+        isLoading: false,
+        userData: {
+            username: '',
+            token: '',
+            uiid: '',
+            bankName: '',
+            bankIid: ''
         }
-        currentDigitizeStep = step;
+    };
+
+    // Helper: Show specific step
+    function showDigitizeStep(step) {
+        const steps = [digitizeStep1, digitizeStep2, digitizeStep3];
+        steps.forEach((stepEl, index) => {
+            stepEl.style.display = index === step - 1 ? 'block' : 'none';
+        });
+        digitizeState.currentStep = step;
     }
 
-    function checkLogin() {
-        fetch(`${apiUrl}/check-user`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                token: localStorage.getItem('token'),
-                uiid: localStorage.getItem('uiid'),
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('Login successful');
-                    showDigitizeStep(2);
-                } else {
-                    // Show login modal if not logged in
-                    digitizeModal.style.display = 'flex';
-                    showDigitizeStep(1);
-                }
-            })
-            .catch(error => {
-                showErrors([error.message]);
-            });
+    // Helper: Open/Close modal
+    function openDigitizeModal() {
+        digitizeModal.style.display = 'flex';
     }
 
-    digitizeBtn.addEventListener('click', () => {
-        if (checkLogin()) {
-            // User is logged in, proceed with digitization
+    function closeDigitizeModal() {
+        digitizeModal.style.display = 'none';
+    }
 
-            showDigitizeStep(2);
-            digitizeModal.style.display = 'flex';
+    // Helper: Set loading state for button
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.disabled = true;
+            button.classList.add('loading');
         } else {
-            // Show login modal if not logged in
-            digitizeModal.style.display = 'flex';
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+    }
+
+    // Helper: Get user credentials from localStorage
+    function getUserCredentials() {
+        return {
+            token: localStorage.getItem('token'),
+            uiid: localStorage.getItem('uiid')
+        };
+    }
+
+    // Helper: Save user credentials to localStorage
+    function saveUserCredentials(username, token, uiid) {
+        localStorage.setItem('username', username);
+        localStorage.setItem('token', token);
+        localStorage.setItem('uiid', uiid);
+        digitizeState.userData = { ...digitizeState.userData, username, token, uiid };
+    }
+
+    // Helper: Save bank info to localStorage
+    function saveBankInfo(bankName, bankIid) {
+        localStorage.setItem('bank', bankName);
+        localStorage.setItem('bank_iid', bankIid);
+        digitizeState.userData = { ...digitizeState.userData, bankName, bankIid };
+    }
+
+    // API: Check if user is logged in
+    async function checkUserLogin() {
+        const { token, uiid } = getUserCredentials();
+
+        if (!token || !uiid) {
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/check-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, uiid })
+            });
+
+            const data = await response.json();
+            return data.success === true;
+        } catch (error) {
+            console.error('Check login error:', error);
+            return false;
+        }
+    }
+
+    // API: Login to LMS
+    async function loginToLMS(username, password) {
+        if (!username || !password) {
+            throw new Error('Vui lòng nhập tài khoản và mật khẩu');
+        }
+
+        const response = await fetch(`${apiUrl}/login-lms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ u: username, p: password })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Đăng nhập thất bại');
+        }
+
+        return data;
+    }
+
+    // API: Find bank by link
+    async function findBank(bankLink) {
+        if (!bankLink) {
+            throw new Error('Vui lòng nhập link ngân hàng');
+        }
+
+        const { token, uiid } = getUserCredentials();
+
+        const response = await fetch(`${apiUrl}/find-bank`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link: bankLink, token, uiid })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Không tìm thấy ngân hàng');
+        }
+
+        return data;
+    }
+
+    // API: Upload questions
+    async function uploadQuestions(questionsData) {
+        const { token, uiid } = getUserCredentials();
+        const bankIid = localStorage.getItem('bank_iid');
+
+        if (!questionsData || questionsData.length === 0) {
+            throw new Error('Không có dữ liệu câu hỏi để số hóa');
+        }
+
+        const response = await fetch(`${apiUrl}/upload-questions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bankIid, token, uiid, questionsData })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Số hóa thất bại');
+        }
+
+        return data;
+    }
+
+    // Event: Open digitize modal
+    digitizeBtn.addEventListener('click', async () => {
+        const isLoggedIn = await checkUserLogin();
+
+        if (isLoggedIn) {
+            showDigitizeStep(2);
+        } else {
             showDigitizeStep(1);
         }
+
+        openDigitizeModal();
     });
 
-    digitizeModalClose.addEventListener('click', () => {
-        digitizeModal.style.display = 'none';
+    // Event: Close modal
+    digitizeModalClose.addEventListener('click', closeDigitizeModal);
+
+    // Event: Login
+    digitizeLoginBtn.addEventListener('click', async () => {
+        const username = document.getElementById('digitizeUsername').value.trim();
+        const password = document.getElementById('digitizePassword').value;
+
+        setButtonLoading(digitizeLoginBtn, true);
+
+        try {
+            const data = await loginToLMS(username, password);
+            saveUserCredentials(username, data.token, data.uiid);
+            showSuccess('Đăng nhập thành công');
+            showDigitizeStep(2);
+        } catch (error) {
+            showErrors([error.message]);
+        } finally {
+            setButtonLoading(digitizeLoginBtn, false);
+        }
     });
 
-    digitizeLoginBtn.addEventListener('click', () => {
-        fetch(`${apiUrl}/login-lms`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                u: document.getElementById('digitizeUsername').value,
-                p: document.getElementById('digitizePassword').value
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Store user info in localStorage
-                    localStorage.setItem('username', document.getElementById('digitizeUsername').value);
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('uiid', data.uiid);
+    // Event: Verify bank link
+    digitizeVerifyLinkBtn.addEventListener('click', async () => {
+        const bankLink = document.getElementById('digitizeBankLink').value.trim();
 
-                    // Show success message
-                    showSuccess('Login successful');
-                    showDigitizeStep(2);
-                } else {
-                    throw new Error(data.message || 'Login failed');
-                }
-            })
-            .catch(error => {
-                showErrors([error.message]);
-            });
-        console.log('Login clicked');
+        setButtonLoading(digitizeVerifyLinkBtn, true);
+
+        try {
+            const data = await findBank(bankLink);
+            saveBankInfo(data.name, data.iid);
+            document.getElementById('digitizeBankName').textContent = data.name;
+            showSuccess('Đã tìm thấy ngân hàng');
+            showDigitizeStep(3);
+        } catch (error) {
+            showErrors([error.message]);
+        } finally {
+            setButtonLoading(digitizeVerifyLinkBtn, false);
+        }
     });
 
-    digitizeVerifyLinkBtn.addEventListener('click', () => {
-        const token = localStorage.getItem('token');
-        const uiid = localStorage.getItem('uiid');
-        fetch(`${apiUrl}/find-bank`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                link: document.getElementById('digitizeBankLink').value,
-                uiid: uiid,
-                token: token,
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Store user info in localStorage
-                    localStorage.setItem('bank', data.name);
-                    localStorage.setItem('bank_iid', data.iid);
+    // Event: Confirm digitization
+    digitizeConfirmBtn.addEventListener('click', async () => {
+        setButtonLoading(digitizeConfirmBtn, true);
+        closeDigitizeModal();
+        showSuccess('Đang tiến hành số hóa...');
 
-                    // Show success message
-                    document.getElementById('digitizeBankName').textContent = data.name;
-                    console.log('Digitize confirmed');
-                    showDigitizeStep(3);
-
-                } else {
-                    throw new Error(data.message || 'Failed to find bank');
-                }
-            })
-            .catch(error => {
-                showErrors([error.message]);
-            });
-        console.log('Verify link clicked');
+        try {
+            const questionsData = JSON.parse(jsonEditor.value);
+            await uploadQuestions(questionsData);
+            showSuccess('Số hóa thành công');
+        } catch (error) {
+            showErrors([error.message]);
+            openDigitizeModal(); // Reopen modal on error
+        } finally {
+            setButtonLoading(digitizeConfirmBtn, false);
+        }
     });
 
-    digitizeConfirmBtn.addEventListener('click', () => {
-        digitizeModal.style.display = 'none';
-        showSuccess("Đang tiến hành số hóa...");
-        fetch(`${apiUrl}/upload-questions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "bankIid": localStorage.getItem('bank_iid'),
-                "token": localStorage.getItem('token'),
-                "uiid": localStorage.getItem('uiid'),
-                "questionsData": JSON.parse(jsonEditor.value)
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('Số hóa thành công');
-                    showDigitizeStep(4);
-
-                } else {
-                    throw new Error(data.message || 'Số hóa thất bại');
-                }
-            })
-            .catch(error => {
-                showErrors([error.message]);
-            });
-    });
-
-    digitizeBackToStep1Btn.addEventListener('click', () => {
-        showDigitizeStep(1);
-    });
-
-    digitizeBackToStep2Btn.addEventListener('click', () => {
-        showDigitizeStep(2);
-    });
+    // Event: Back buttons
+    digitizeBackToStep1Btn.addEventListener('click', () => showDigitizeStep(1));
+    digitizeBackToStep2Btn.addEventListener('click', () => showDigitizeStep(2));
 
     window.addEventListener('click', (event) => {
         if (event.target == digitizeModal) {
