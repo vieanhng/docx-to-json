@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
             'endalgin*': '{\\end{aligned}}'
         });
     }
+
+    const apiUrl = 'https://vercel-doc-to-json.vercel.app';
+
     const jsonEditor = document.getElementById('jsonEditor');
     const previewContainer = document.getElementById('previewContainer');
     const formatBtn = document.getElementById('formatBtn');
@@ -64,17 +67,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const mcOptionsContainer = document.getElementById('mcOptionsContainer');
     const tfStatementsContainer = document.getElementById('tfStatementsContainer');
     const fillAnswerContainer = document.getElementById('fillAnswerContainer');
+    const mpMatchingContainer = document.getElementById('mpMatchingContainer');
+    const mddmDragDropContainer = document.getElementById('mddmDragDropContainer');
     const optionsContainer = document.getElementById('optionsContainer');
     const statementsContainer = document.getElementById('statementsContainer');
+    const leftItemsContainer = document.getElementById('leftItemsContainer');
+    const rightItemsContainer = document.getElementById('rightItemsContainer');
+    const dragDropOptionsContainer = document.getElementById('dragDropOptionsContainer');
     const correctAnswersContainer = document.getElementById('correctAnswersContainer');
     const correctAnswersContainerTF = document.getElementById('correctAnswersContainerTF');
     const editAnswer = document.getElementById('editAnswer');
+    const editCorrectAnswerMDDM = document.getElementById('editCorrectAnswerMDDM');
     const editDifficultLevel = document.getElementById('editDifficultLevel');
     const editSolution = document.getElementById('editSolution');
     const editHint = document.getElementById('editHint');
     const editTags = document.getElementById('editTags');
     const addOptionBtn = document.getElementById('addOptionBtn');
     const addStatementBtn = document.getElementById('addStatementBtn');
+    const addLeftItemBtn = document.getElementById('addLeftItemBtn');
+    const addRightItemBtn = document.getElementById('addRightItemBtn');
+    const addDragDropOptionBtn = document.getElementById('addDragDropOptionBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const saveEditBtn = document.getElementById('saveEditBtn');
 
@@ -278,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show loading state
         showSuccess('Đang xử lý file Word...');
 
-        fetch('https://vercel-doc-to-json.vercel.app/upload', {
+        fetch(`${apiUrl}/upload`, {
             method: 'POST',
             headers: {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -785,6 +797,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function getSelectedData() {
+        const checkboxes = document.querySelectorAll('.question-checkbox');
+        const selectedData = [];
+        const parsedData = JSON.parse(jsonEditor.value);
+
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const questionIndex = cb.dataset.index;
+                selectedData.push(parsedData[questionIndex]);
+            }
+        });
+
+        return selectedData;
+    }
+
     function selectAllQuestions() {
         const checkboxes = document.querySelectorAll('.question-checkbox');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
@@ -1128,6 +1155,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 mcOptionsContainer.style.display = 'block';
                 tfStatementsContainer.style.display = 'none';
                 fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'none';
 
                 // Clear and populate options
                 optionsContainer.innerHTML = '';
@@ -1171,6 +1200,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 mcOptionsContainer.style.display = 'none';
                 tfStatementsContainer.style.display = 'block';
                 fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'none';
 
                 // Clear and populate statements
                 statementsContainer.innerHTML = '';
@@ -1213,9 +1244,99 @@ document.addEventListener('DOMContentLoaded', function () {
             else if (question.type === 'SA') {
                 mcOptionsContainer.style.display = 'none';
                 tfStatementsContainer.style.display = 'none';
-                fillAnswerContainer.style.display = 'block';
+                fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'none';
 
                 editAnswer.value = question.answers || '';
+            }
+
+            // Set items for MP (Matching Pairs)
+            else if (question.type === 'MP') {
+                mcOptionsContainer.style.display = 'none';
+                tfStatementsContainer.style.display = 'none';
+                fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'block';
+                mddmDragDropContainer.style.display = 'none';
+
+                // Clear and populate left items
+                leftItemsContainer.innerHTML = '';
+                if (question.left && Array.isArray(question.left)) {
+                    question.left.forEach((item, i) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'form-group';
+                        itemDiv.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control left-item-input" value="${item}" data-index="${i}">
+                                <button type="button" class="btn-remove-left-item btn-secondary" data-index="${i}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        leftItemsContainer.appendChild(itemDiv);
+                    });
+                }
+
+                // Clear and populate right items
+                rightItemsContainer.innerHTML = '';
+                if (question.right && Array.isArray(question.right)) {
+                    question.right.forEach((item, i) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'form-group';
+                        itemDiv.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control right-item-input" value="${item}" data-index="${i}">
+                                <button type="button" class="btn-remove-right-item btn-secondary" data-index="${i}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        rightItemsContainer.appendChild(itemDiv);
+                    });
+                }
+            }
+
+            // Set options for MDDM (Drag and Drop Multiple)
+            else if (question.type === 'MDDM') {
+                mcOptionsContainer.style.display = 'none';
+                tfStatementsContainer.style.display = 'none';
+                fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'block';
+
+                // Clear and populate drag drop options
+                dragDropOptionsContainer.innerHTML = '';
+                if (question.options && Array.isArray(question.options)) {
+                    question.options.forEach((option, i) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'form-group';
+                        optionDiv.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control dragdrop-option-input" value="${option}" data-index="${i}">
+                                <button type="button" class="btn-remove-dragdrop-option btn-secondary" data-index="${i}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        dragDropOptionsContainer.appendChild(optionDiv);
+                    });
+                }
+
+                // Set correct answer
+                if (question.correctAnswer && Array.isArray(question.correctAnswer)) {
+                    editCorrectAnswerMDDM.value = question.correctAnswer.join(',');
+                } else {
+                    editCorrectAnswerMDDM.value = '';
+                }
+            }
+
+            // Default case - hide all type-specific containers
+            else {
+                mcOptionsContainer.style.display = 'none';
+                tfStatementsContainer.style.display = 'none';
+                fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'none';
             }
 
             // Show modal
@@ -1282,7 +1403,49 @@ document.addEventListener('DOMContentLoaded', function () {
                 updatedQuestion.correctAnswer = correctAnswer;
             }
             else if (type === 'SA') {
-                updatedQuestion.answers = editAnswer.value;
+                const answer = [];
+                const regex = /__([^_]*?)__|\[([^\[\]]*?\|[^[\]]*?)\]/g;
+                let match;
+
+                while ((match = regex.exec(question)) !== null) {
+                    if (match[1] !== undefined) {
+                        const parts = match[1]
+                            .split('/')
+                            .map(s => s.trim())
+                            .filter(s => s !== '');
+                        if (parts.length > 0) answer.push(parts);
+                    } else if (match[2] !== undefined) {
+                        const firstOption = match[2].split('|')[0]?.trim();
+                        if (firstOption !== undefined && firstOption !== '') {
+                            answer.push([firstOption]);
+                        }
+                    }
+                }
+                updatedQuestion.answers = answer;
+            }
+            else if (type === 'MP') {
+                // Get left items
+                const leftItemInputs = document.querySelectorAll('.left-item-input');
+                const leftItems = Array.from(leftItemInputs).map(input => input.value);
+
+                // Get right items
+                const rightItemInputs = document.querySelectorAll('.right-item-input');
+                const rightItems = Array.from(rightItemInputs).map(input => input.value);
+
+                updatedQuestion.left = leftItems;
+                updatedQuestion.right = rightItems;
+            }
+            else if (type === 'MDDM') {
+                // Get drag drop options
+                const dragDropOptionInputs = document.querySelectorAll('.dragdrop-option-input');
+                const options = Array.from(dragDropOptionInputs).map(input => input.value);
+
+                // Get correct answer (parse comma-separated indices)
+                const correctAnswerStr = editCorrectAnswerMDDM.value.trim();
+                const correctAnswer = correctAnswerStr ? correctAnswerStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) : [];
+
+                updatedQuestion.options = options;
+                updatedQuestion.correctAnswer = correctAnswer;
             }
 
             // Update data
@@ -1430,6 +1593,69 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Add left item to MP question
+    function addLeftItem() {
+        const itemIndex = document.querySelectorAll('.left-item-input').length;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'form-group';
+        itemDiv.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="form-control left-item-input" value="" data-index="${itemIndex}">
+                <button type="button" class="btn-remove-left-item btn-secondary" data-index="${itemIndex}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        leftItemsContainer.appendChild(itemDiv);
+
+        // Add event listener to remove button
+        itemDiv.querySelector('.btn-remove-left-item').addEventListener('click', function () {
+            this.closest('.form-group').remove();
+        });
+    }
+
+    // Add right item to MP question
+    function addRightItem() {
+        const itemIndex = document.querySelectorAll('.right-item-input').length;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'form-group';
+        itemDiv.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="form-control right-item-input" value="" data-index="${itemIndex}">
+                <button type="button" class="btn-remove-right-item btn-secondary" data-index="${itemIndex}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        rightItemsContainer.appendChild(itemDiv);
+
+        // Add event listener to remove button
+        itemDiv.querySelector('.btn-remove-right-item').addEventListener('click', function () {
+            this.closest('.form-group').remove();
+        });
+    }
+
+    // Add drag drop option to MDDM question
+    function addDragDropOption() {
+        const optionIndex = document.querySelectorAll('.dragdrop-option-input').length;
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'form-group';
+        optionDiv.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="form-control dragdrop-option-input" value="" data-index="${optionIndex}">
+                <button type="button" class="btn-remove-dragdrop-option btn-secondary" data-index="${optionIndex}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        dragDropOptionsContainer.appendChild(optionDiv);
+
+        // Add event listener to remove button
+        optionDiv.querySelector('.btn-remove-dragdrop-option').addEventListener('click', function () {
+            this.closest('.form-group').remove();
+        });
+    }
+
     // Handle question type change in edit modal
     editType.addEventListener('change', function () {
         const type = this.value;
@@ -1456,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         showWarnings(['Chức năng đang phát triển']);
         return;
-    
+
     }
 
     // Hàm tạo gợi ý bằng AI
@@ -1600,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].hint = hint;
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updatePreview();                    
+                    updatePreview();
                 }
             }
 
@@ -1855,6 +2081,60 @@ document.addEventListener('DOMContentLoaded', function () {
                             `;
                 }
 
+                if (item.type === 'MP') {
+                    html += '<div class="preview-matching">';
+                    html += '<table class="matching-table">';
+                    html += '<thead><tr><th>Cột trái</th><th>Cột phải</th></tr></thead>';
+                    html += '<tbody>';
+
+                    const maxLength = Math.max(
+                        item.left ? item.left.length : 0,
+                        item.right ? item.right.length : 0
+                    );
+
+                    for (let i = 0; i < maxLength; i++) {
+                        const leftItem = item.left && item.left[i] ? renderMathInText(item.left[i]) : '';
+                        const rightItem = item.right && item.right[i] ? renderMathInText(item.right[i]) : '';
+                        html += `
+                            <tr>
+                                <td>${leftItem}</td>
+                                <td>${rightItem}</td>
+                            </tr>
+                        `;
+                    }
+
+                    html += '</tbody></table>';
+                    html += '</div>';
+                }
+
+                if (item.type === 'MDDM') {
+                    html += '<div class="preview-dragdrop">';
+                    html += '<div class="preview-dragdrop-options">';
+                    html += '<strong>Các lựa chọn:</strong>';
+                    html += '<ol class="dragdrop-options-list">';
+
+                    if (item.options && Array.isArray(item.options)) {
+                        item.options.forEach((option, i) => {
+                            html += `<li>${renderMathInText(option)}</li>`;
+                        });
+                    }
+
+                    html += '</ol>';
+                    html += '</div>';
+
+                    if (item.correctAnswer && Array.isArray(item.correctAnswer)) {
+                        html += '<div class="preview-dragdrop-answer">';
+                        html += '<strong>Đáp án đúng (theo thứ tự vị trí):</strong> ';
+                        html += item.correctAnswer.map((index, pos) => {
+                            const optionText = item.options && item.options[index] ? item.options[index] : `Chỉ số ${index}`;
+                            return `<span class="correct-answer-badge">Vị trí ${pos + 1}: ${renderMathInText(optionText)}</span>`;
+                        }).join(' ');
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                }
+
                 // Hiển thị các thông tin bổ sung
                 html += '<div class="preview-details">';
 
@@ -1976,11 +2256,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 previewItem.innerHTML = html;
                 previewContainer.appendChild(previewItem);
-                    // Thêm event listener cho từng checkbox
-                    updateSelectAllButtonState();
-    document.querySelectorAll('.question-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectAllButtonState);
-    });
+                // Thêm event listener cho từng checkbox
+                updateSelectAllButtonState();
+                document.querySelectorAll('.question-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectAllButtonState);
+                });
             });
 
             // Add event listeners to edit buttons
@@ -2062,6 +2342,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addStatementBtn.addEventListener('click', addStatement);
 
+    addLeftItemBtn.addEventListener('click', addLeftItem);
+
+    addRightItemBtn.addEventListener('click', addRightItem);
+
+    addDragDropOptionBtn.addEventListener('click', addDragDropOption);
+
     // AI generation event listeners
     generateSolutionBtn.addEventListener('click', generateSolution);
     generateHintBtn.addEventListener('click', generateHint);
@@ -2102,6 +2388,192 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Close the dropdown if the user clicks outside of it
+    // Digitize Modal functionality
+    const digitizeBtn = document.getElementById('digitize');
+    const digitizeModal = document.getElementById('digitizeModal');
+    const digitizeModalClose = document.getElementById('digitizeModalClose');
+    const digitizeStep1 = document.getElementById('digitizeStep1');
+    const digitizeStep2 = document.getElementById('digitizeStep2');
+    const digitizeStep3 = document.getElementById('digitizeStep3');
+    const digitizeLoginBtn = document.getElementById('digitizeLoginBtn');
+    const digitizeVerifyLinkBtn = document.getElementById('digitizeVerifyLinkBtn');
+    const digitizeConfirmBtn = document.getElementById('digitizeConfirmBtn');
+    const digitizeBackToStep1Btn = document.getElementById('digitizeBackToStep1Btn');
+    const digitizeBackToStep2Btn = document.getElementById('digitizeBackToStep2Btn');
+
+    let currentDigitizeStep = 2;
+
+    function showDigitizeStep(step) {
+        digitizeStep1.style.display = 'none';
+        digitizeStep2.style.display = 'none';
+        digitizeStep3.style.display = 'none';
+
+        if (step === 1) {
+            digitizeStep1.style.display = 'block';
+        } else if (step === 2) {
+            digitizeStep2.style.display = 'block';
+        } else if (step === 3) {
+            digitizeStep3.style.display = 'block';
+        }
+        currentDigitizeStep = step;
+    }
+
+    function checkLogin() {
+        fetch(`${apiUrl}/check-user`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: localStorage.getItem('token'),
+                uiid: localStorage.getItem('uiid'),
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Login successful');
+                    showDigitizeStep(2);
+                } else {
+                    // Show login modal if not logged in
+                    digitizeModal.style.display = 'flex';
+                    showDigitizeStep(1);
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+    }
+
+    digitizeBtn.addEventListener('click', () => {
+        if (checkLogin()) {
+            // User is logged in, proceed with digitization
+
+            showDigitizeStep(2);
+            digitizeModal.style.display = 'flex';
+        } else {
+            // Show login modal if not logged in
+            digitizeModal.style.display = 'flex';
+            showDigitizeStep(1);
+        }
+    });
+
+    digitizeModalClose.addEventListener('click', () => {
+        digitizeModal.style.display = 'none';
+    });
+
+    digitizeLoginBtn.addEventListener('click', () => {
+        fetch(`${apiUrl}/login-lms`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                u: document.getElementById('digitizeUsername').value,
+                p: document.getElementById('digitizePassword').value
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store user info in localStorage
+                    localStorage.setItem('username', document.getElementById('digitizeUsername').value);
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('uiid', data.uiid);
+
+                    // Show success message
+                    showSuccess('Login successful');
+                    showDigitizeStep(2);
+                } else {
+                    throw new Error(data.message || 'Login failed');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+        console.log('Login clicked');
+    });
+
+    digitizeVerifyLinkBtn.addEventListener('click', () => {
+        const token = localStorage.getItem('token');
+        const uiid = localStorage.getItem('uiid');
+        fetch(`${apiUrl}/find-bank`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                link: document.getElementById('digitizeBankLink').value,
+                uiid: uiid,
+                token: token,
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store user info in localStorage
+                    localStorage.setItem('bank', data.name);
+                    localStorage.setItem('bank_iid', data.iid);
+
+                    // Show success message
+                    document.getElementById('digitizeBankName').textContent = data.name;
+                    console.log('Digitize confirmed');
+                    showDigitizeStep(3);
+
+                } else {
+                    throw new Error(data.message || 'Failed to find bank');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+        console.log('Verify link clicked');
+    });
+
+    digitizeConfirmBtn.addEventListener('click', () => {
+        digitizeModal.style.display = 'none';
+        showSuccess("Đang tiến hành số hóa...");
+        fetch(`${apiUrl}/upload-questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "bankIid": localStorage.getItem('bank_iid'),
+                "token": localStorage.getItem('token'),
+                "uiid": localStorage.getItem('uiid'),
+                "questionsData": JSON.parse(jsonEditor.value)
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Số hóa thành công');
+                    showDigitizeStep(4);
+
+                } else {
+                    throw new Error(data.message || 'Số hóa thất bại');
+                }
+            })
+            .catch(error => {
+                showErrors([error.message]);
+            });
+    });
+
+    digitizeBackToStep1Btn.addEventListener('click', () => {
+        showDigitizeStep(1);
+    });
+
+    digitizeBackToStep2Btn.addEventListener('click', () => {
+        showDigitizeStep(2);
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == digitizeModal) {
+            digitizeModal.style.display = 'none';
+        }
+    });
+
     window.addEventListener('click', (event) => {
         if (!fabToggleBtn.contains(event.target) && !fabDropdown.contains(event.target)) {
             fabDropdown.classList.remove('show');

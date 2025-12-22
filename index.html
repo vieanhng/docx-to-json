@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -34,7 +36,7 @@
                 <span class="stat-label">Điền chỗ trống</span>
             </div>
         </div>
-        
+
         <div class="floating-action-button">
             <button id="fabToggleBtn" class="btn btn-primary fab-toggle-btn">
                 <i class="fas fa-magic"></i>
@@ -44,7 +46,7 @@
                     <div class="batch-actions-header">
                         <span>Công cụ</span>
                     </div>
-                    <div class="batch-actions-content">              
+                    <div class="batch-actions-content">
                         <div class="batch-action-group">
                             <div class="batch-action-title">Tạo hàng loạt bằng AI cho các câu được chọn</div>
                             <div class="batch-action-buttons">
@@ -130,18 +132,20 @@
                 </div>
                 <div class="panel-content">
                     <div class="file-upload-container" id="fileUploadContainer">
-                <label for="fileInput" class="file-upload-label">
-                    <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
-                    <p class="file-upload-text">Kéo thả file JSON hoặc Word (.docx) vào đây hoặc nhấn để chọn file</p>
-                </label>
-                <input type="file" id="fileInput" accept=".json,.docx">
+                        <label for="fileInput" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+                            <p class="file-upload-text">Kéo thả file JSON hoặc Word (.docx) vào đây hoặc nhấn để chọn
+                                file</p>
+                        </label>
+                        <input type="file" id="fileInput" accept=".json,.docx">
                         <div class="file-info" id="fileInfo">
                             <div class="file-info-name" id="fileName"></div>
                             <div class="file-info-size" id="fileSize"></div>
                         </div>
                     </div>
                     <div class="editor-content">
-                        <textarea id="jsonEditor" placeholder="Nội dung JSON sẽ hiển thị ở đây sau khi tải lên..."></textarea>
+                        <textarea id="jsonEditor"
+                            placeholder="Nội dung JSON sẽ hiển thị ở đây sau khi tải lên..."></textarea>
                     </div>
                 </div>
             </div>
@@ -153,15 +157,15 @@
                         <span>Xem trước</span>
                     </div>
                     <div class="panel-actions">
-                    <button id="toggleEditorBtn" class="btn-secondary">
-                        <i class="fas fa-code"></i>
-                        Hiển thị/Ẩn JSON
-                    </button>
-                    <button id="selectAllBtn" class="btn-secondary">
-                        <i class="fas fa-check-double"></i>
-                        Chọn tất cả
-                    </button>
-                </div>
+                        <button id="toggleEditorBtn" class="btn-secondary">
+                            <i class="fas fa-code"></i>
+                            Hiển thị/Ẩn JSON
+                        </button>
+                        <button id="selectAllBtn" class="btn-secondary">
+                            <i class="fas fa-check-double"></i>
+                            Chọn tất cả
+                        </button>
+                    </div>
                 </div>
                 <div class="panel-content">
                     <div id="previewContainer" class="preview-content">
@@ -190,14 +194,16 @@
                         <option value="MMC">Trắc nghiệm nhiều đáp án (MMC)</option>
                         <option value="TF">Đúng/Sai (TF)</option>
                         <option value="SA">Điền vào chỗ trống (SA)</option>
+                        <option value="MP">Ghép nối (MP)</option>
+                        <option value="MDDM">Kéo thả (MDDM)</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label" for="editQuestion">Nội dung câu hỏi</label>
                     <textarea id="editQuestion" class="form-control" rows="3"></textarea>
                 </div>
-                
+
                 <div id="mcOptionsContainer">
                     <div class="form-group">
                         <label class="form-label">Lựa chọn</label>
@@ -208,7 +214,7 @@
                             <i class="fas fa-plus"></i> Thêm lựa chọn
                         </button>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label" for="editCorrectAnswer">Đáp án đúng</label>
                         <div id="correctAnswersContainer">
@@ -216,7 +222,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="tfStatementsContainer" style="display: none;">
                     <div class="form-group">
                         <label class="form-label">Khẳng định</label>
@@ -227,7 +233,7 @@
                             <i class="fas fa-plus"></i> Thêm khẳng định
                         </button>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label" for="editCorrectAnswerTF">Đáp án đúng</label>
                         <div id="correctAnswersContainerTF">
@@ -235,19 +241,61 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="fillAnswerContainer" style="display: none;">
                     <div class="form-group">
                         <label class="form-label" for="editAnswer">Đáp án</label>
                         <input type="text" id="editAnswer" class="form-control">
                     </div>
                 </div>
-                
+
+                <div id="mpMatchingContainer" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Cột trái (Left)</label>
+                        <div id="leftItemsContainer">
+                            <!-- Left items will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addLeftItemBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm mục trái
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Cột phải (Right)</label>
+                        <div id="rightItemsContainer">
+                            <!-- Right items will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addRightItemBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm mục phải
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mddmDragDropContainer" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Các lựa chọn (Options)</label>
+                        <div id="dragDropOptionsContainer">
+                            <!-- Drag drop options will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addDragDropOptionBtn" class="btn-secondary"
+                            style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm lựa chọn
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Đáp án đúng (Correct Answer - chỉ số, ngăn cách bằng dấu phẩy)</label>
+                        <input type="text" id="editCorrectAnswerMDDM" class="form-control" placeholder="Ví dụ: 0,2,1">
+                        <small class="form-text">Nhập chỉ số của các lựa chọn đúng theo thứ tự vị trí (bắt đầu từ
+                            0)</small>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label" for="editDifficultLevel">Mức độ</label>
-                    <input type="text" id="editDifficultLevel" class="form-control" placeholder="Ví dụ: Dễ, Trung bình, Khó">
+                    <input type="text" id="editDifficultLevel" class="form-control" placeholder="Ví dụ: 1,2,3,4">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Kỹ năng</label>
                     <div id="skillsMultiSelect" class="multi-select">
@@ -268,7 +316,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label-with-action">
                         <label class="form-label">Động từ chỉ thị</label>
@@ -294,7 +342,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label-with-action">
                         <label class="form-label" for="editSolution">Lời giải chi tiết</label>
@@ -304,7 +352,7 @@
                     </div>
                     <textarea id="editSolution" class="form-control" rows="4"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label-with-action">
                         <label class="form-label" for="editHint">Gợi ý</label>
@@ -314,7 +362,7 @@
                     </div>
                     <textarea id="editHint" class="form-control" rows="2"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label-with-action">
                         <label class="form-label" for="editTags">Thẻ (ngăn cách bằng dấu chấm phẩy)</label>
@@ -332,23 +380,64 @@
         </div>
     </div>
 
+    <!-- Digitize Modal -->
+    <div id="digitizeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Số hóa dữ liệu</h3>
+                <button class="modal-close" id="digitizeModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="digitizeStep1" class="digitize-step" style="display: none;">
+                    <h4>Bước 1: Đăng nhập</h4>
+                    <div class="form-group">
+                        <label class="form-label" for="digitizeUsername">Tài khoản</label>
+                        <input type="text" id="digitizeUsername" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="digitizePassword">Mật khẩu</label>
+                        <input type="password" id="digitizePassword" class="form-control">
+                    </div>
+                    <button type="button" id="digitizeLoginBtn" class="btn-primary">Đăng nhập</button>
+                </div>
+                <div id="digitizeStep2" class="digitize-step" style="display: none;">
+                    <h4>Bước 2: Nhập link ngân hàng</h4>
+                    <div class="form-group">
+                        <label class="form-label" for="digitizeBankLink">Link ngân hàng</label>
+                        <input type="text" id="digitizeBankLink" class="form-control">
+                    </div>
+                    <button type="button" id="digitizeVerifyLinkBtn" class="btn-primary">Xác nhận link</button>
+                    <button type="button" id="digitizeBackToStep1Btn" class="btn-secondary">Quay lại</button>
+                </div>
+                <div id="digitizeStep3" class="digitize-step" style="display: none;">
+                    <h4>Bước 3: Số hóa</h4>
+                    <p class="digitize-bank-name">Ngân hàng: <span id="digitizeBankName"></span></p>
+                    <p>Sẵn sàng để số hóa dữ liệu câu hỏi hiện tại?</p>
+                    <button type="button" id="digitizeConfirmBtn" class="btn-primary">Xác nhận số hóa</button>
+                    <button type="button" id="digitizeBackToStep2Btn" class="btn-secondary">Quay lại</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MathJax JS for math rendering -->
     <script>
-    window.MathJax = {
-        tex: {
-            inlineMath: [['$', '$']],
-            displayMath: [['$$', '$$']],
-            processEscapes: true,
-            packages: ['base', 'ams', 'noerrors', 'noundefined', 'newcommand', 'boldsymbol']
-        },
-        options: {
-            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code','img'],
-            ignoreHtmlClass: 'tex2jax_ignore',
-            processHtmlClass: 'tex2jax_process'
-        }
-    };
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: true,
+                packages: ['base', 'ams', 'noerrors', 'noundefined', 'newcommand', 'boldsymbol']
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'img'],
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
