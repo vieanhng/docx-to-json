@@ -109,11 +109,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return "";
         }
 
-        let textOnly = htmlString.replace(/<.*?>/g, '');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlString;
 
-        textOnly = textOnly.replace(/\s+/g, ' ').trim();
-
-        return textOnly;
+        const text = tempDiv.textContent || tempDiv.innerText || '';
+        tempDiv.remove();
+        return text.replace(/\s+/g, ' ').trim();
     }
 
     // Fetch data from JSON files
@@ -299,12 +300,12 @@ document.addEventListener('DOMContentLoaded', function () {
             body: formData
         })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Lỗi khi gửi file Word');
-                }
                 return response.json();
             })
             .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
                 // Xử lý dữ liệu JSON trả về nhưng không hiển thị trong trình soạn thảo
                 jsonEditor.value = JSON.stringify(data.data, null, 2);
                 // Ẩn phần soạn thảo JSON và tập trung vào phần xem trước
@@ -1731,6 +1732,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function renderAnswerPositions(answers) {
+        let html = '<div class="answer-positions">';
+
+        answers.forEach((answerGroup, index) => {
+            const position = index + 1;
+            const answersText = answerGroup.join(', ');
+            html += `
+      <div class="answer-item">
+        Vị trí ${position} đáp án: <strong>${escapeHtml(answersText)}</strong>
+      </div>
+    `;
+        });
+
+        html += '</div>';
+        return html;
+    }
+
     // Cập nhật xem trước
     function updatePreview() {
         try {
@@ -1840,7 +1864,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (item.type === 'SA') {
                     html += `
                                 <div class="preview-answer">
-                                    <strong>Đáp án:</strong> ${JSON.stringify(item.answers)}
+                                    <strong>Đáp án:</strong> 
+                                    ${renderAnswerPositions(item.answers)}
                                 </div>
                             `;
                 }
