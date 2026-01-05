@@ -29,6 +29,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const apiUrl = 'https://vercel-doc-to-json.vercel.app';
 
+    const HEADER_REFERENCE = {
+        QUESTION: 'Câu',
+        TYPE: 'Loại',
+        LEVEL: 'Mức độ',
+        KNOWLEDGE_CODE: 'Mã',
+        CONTENT: 'Nội dung',
+        ANSWER: 'Đáp án',
+        EXPLANATION: 'Lời giải chi tiết'
+    };
+
     const jsonEditor = document.getElementById('jsonEditor');
     const previewContainer = document.getElementById('previewContainer');
     const formatBtn = document.getElementById('formatBtn');
@@ -389,14 +399,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         formdata.append("question_content", stripHtmlAndCleanWhitespace(content));
 
+        let body = {
+            question_content: stripHtmlAndCleanWhitespace(content)
+        };
+
         const requestOptions = {
             method: "POST",
-            body: formdata,
+            body: JSON.stringify(body),
             redirect: "follow",
         };
 
         try {
-            const response = await fetch("https://free-n8n.taikhoanai.store/webhook/gen-hints", requestOptions);
+            const response = await fetch("https://script.google.com/macros/s/AKfycbyKeC02IbZk2t-qG5-3qTkFkcSyYj1Xamo0lqZTt9RU_Or9C_xWrO3KhE55HxhpMg3csA/exec", requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -433,14 +447,20 @@ document.addEventListener('DOMContentLoaded', function () {
         formdata.append("level", level);
         formdata.append("solution", stripHtmlAndCleanWhitespace(solution));
 
+        let body = {
+            content: stripHtmlAndCleanWhitespace(content),
+            level: level,
+            solution: stripHtmlAndCleanWhitespace(solution)
+        };
+
         const requestOptions = {
             method: "POST",
-            body: formdata,
+            body: JSON.stringify(body),
             redirect: "follow",
         };
 
         try {
-            const response = await fetch("https://free-n8n.taikhoanai.store/webhook/gen-dongtu", requestOptions);
+            const response = await fetch("https://script.google.com/macros/s/AKfycbwDt4hWU_3XM7ovCyEPvsFvRJp3klDGOuqB2NldgPXqkjNam20ufPRfpyGrHuajKsjU/exec", requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -477,14 +497,20 @@ document.addEventListener('DOMContentLoaded', function () {
         formdata.append("level", level);
         formdata.append("solution", stripHtmlAndCleanWhitespace(solution));
 
+        let body = {
+            content: stripHtmlAndCleanWhitespace(content),
+            level: level,
+            solution: stripHtmlAndCleanWhitespace(solution)
+        };
+
         const requestOptions = {
             method: "POST",
-            body: formdata,
+            body: JSON.stringify(body),
             redirect: "follow",
         };
 
         try {
-            const response = await fetch("https://free-n8n.taikhoanai.store/webhook/gen-the", requestOptions);
+            const response = await fetch("https://script.google.com/macros/s/AKfycbzO8jbMsnqaqKULmC42IW-Mc_vMwrQYegQI9p0crXzImohVL97NBWob7WyoeYfkEYmcQQ/exec", requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -1862,7 +1888,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const question = data[index];
 
                     // Dùng await để đợi từng request hoàn thành trước khi sang vòng lặp tiếp theo
-                    const hint = await genHint(question.raw["Nội dung"] + "HD giải: " + question.raw["HD giải chi tiết"]);
+                    const hint = await genHint(question.raw[HEADER_REFERENCE.CONTENT] + "HD giải: " + question.raw[HEADER_REFERENCE.EXPLANATION]);
 
                     // Cập nhật hint vào mảng data
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
@@ -1911,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const question = data[index];
 
                     // Dùng await để đợi từng request hoàn thành trước khi sang vòng lặp tiếp theo
-                    const actionWords = await genActionWord(question.raw["Nội dung"], question.raw["HD giải chi tiết"], question["MĐ"]);
+                    const actionWords = await genActionWord(question.raw[HEADER_REFERENCE.CONTENT], question.raw[HEADER_REFERENCE.EXPLANATION], question.raw[HEADER_REFERENCE.LEVEL]);
 
                     // Cập nhật hint vào mảng data
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
@@ -1958,7 +1984,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const question = data[index];
 
                     // Tạo thẻ dựa trên loại câu hỏi và nội dung
-                    let tags = await genTags(question.raw["Nội dung"], question.raw["HD giải chi tiết"], question["MĐ"]);
+                    let tags = await genTags(question.raw[HEADER_REFERENCE.CONTENT], question.raw[HEADER_REFERENCE.EXPLANATION], question.raw[HEADER_REFERENCE.LEVEL]);
 
                     // Loại bỏ trùng lặp
                     tags = [...new Set(tags)];
