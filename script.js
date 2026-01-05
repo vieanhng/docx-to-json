@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchJSONData() {
         try {
             // Fetch skills data
-            const skillsResponse = await fetch('https://free-n8n.taikhoanai.store/webhook/get-skills');
+            const skillsResponse = await fetch('https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec?action=get-skills');
             if (skillsResponse.ok) {
                 skillsData = await skillsResponse.json();
             } else {
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Fetch action words data
-            const actionWordsResponse = await fetch('https://free-n8n.taikhoanai.store/webhook/get-dongtu');
+            const actionWordsResponse = await fetch('https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec?action=get-dongtu');
             if (actionWordsResponse.ok) {
                 actionWordsData = await actionWordsResponse.json();
             } else {
