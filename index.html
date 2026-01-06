@@ -79,24 +79,33 @@
 
         <div id="errorContainer" class="error-container">
             <div class="message-title">
-                <i class="fas fa-exclamation-circle error-icon"></i>
-                Lỗi
+                <div class="message-title-content">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    Lỗi
+                </div>
+                <button class="message-close-btn" onclick="hideAllMessages()">&times;</button>
             </div>
             <ul id="errorList" class="error-list"></ul>
         </div>
 
         <div id="warningContainer" class="warning-container">
             <div class="message-title">
-                <i class="fas fa-exclamation-triangle warning-icon"></i>
-                Cảnh báo
+                <div class="message-title-content">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    Cảnh báo
+                </div>
+                <button class="message-close-btn" onclick="hideAllMessages()">&times;</button>
             </div>
             <ul id="warningList" class="warning-list"></ul>
         </div>
 
         <div id="successContainer" class="success-container">
             <div class="message-title">
-                <i class="fas fa-check-circle success-icon"></i>
-                Thành công
+                <div class="message-title-content">
+                    <i class="fas fa-check-circle success-icon"></i>
+                    Thành công
+                </div>
+                <button class="message-close-btn" onclick="hideAllMessages()">&times;</button>
             </div>
             <p id="successMessage" class="success-message"></p>
         </div>
@@ -196,6 +205,7 @@
                         <option value="SA">Điền vào chỗ trống (SA)</option>
                         <option value="MP">Ghép nối (MP)</option>
                         <option value="MDDM">Kéo thả (MDDM)</option>
+                        <option value="MRO">Sắp xếp (MRO)</option>
                     </select>
                 </div>
 
@@ -288,6 +298,22 @@
                         <input type="text" id="editCorrectAnswerMDDM" class="form-control" placeholder="Ví dụ: 0,2,1">
                         <small class="form-text">Nhập chỉ số của các lựa chọn đúng theo thứ tự vị trí (bắt đầu từ
                             0)</small>
+                    </div>
+                </div>
+
+                <div id="mroReorderingContainer" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Các mục cần sắp xếp (Items - theo thứ tự đúng)</label>
+                        <small class="form-text" style="display: block; margin-bottom: 0.5rem;">
+                            Nhập các mục theo thứ tự đúng từ trên xuống dưới. Học sinh sẽ phải sắp xếp lại các mục
+                            này.
+                        </small>
+                        <div id="reorderItemsContainer">
+                            <!-- Reorder items will be dynamically added here -->
+                        </div>
+                        <button type="button" id="addReorderItemBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+                            <i class="fas fa-plus"></i> Thêm mục
+                        </button>
                     </div>
                 </div>
 

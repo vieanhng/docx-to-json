@@ -551,45 +551,150 @@ input:checked+.slider:before {
 .error-container,
 .success-container {
     border-radius: var(--radius);
-    padding: 1rem;
+    padding: 1.25rem 1.5rem;
     margin-bottom: 1.5rem;
     display: none;
+    background-color: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid;
+    position: sticky;
+    top: 1rem;
+    z-index: 999;
+    overflow: hidden;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+
+    to {
+        opacity: 0;
+    }
+}
+
+.warning-container.fade-out,
+.error-container.fade-out,
+.success-container.fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+}
+
+.warning-container::before,
+.error-container::before,
+.success-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
 }
 
 .warning-container {
-    background-color: #fffbeb;
-    border-left: 4px solid var(--warning);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.warning-container::before {
+    background: linear-gradient(180deg, var(--warning) 0%, #d97706 100%);
 }
 
 .error-container {
-    background-color: #fee2e2;
-    border-left: 4px solid var(--danger);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.error-container::before {
+    background: linear-gradient(180deg, var(--danger) 0%, #dc2626 100%);
 }
 
 .success-container {
-    background-color: #d1fae5;
-    border-left: 4px solid var(--success);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.success-container::before {
+    background: linear-gradient(180deg, var(--success) 0%, #059669 100%);
 }
 
 .message-title {
     font-weight: 600;
     color: var(--gray-800);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 1rem;
+}
+
+.message-title-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.message-close-btn {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.message-close-btn:hover {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.warning-icon,
+.error-icon,
+.success-icon {
+    font-size: 1.25rem;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .warning-icon {
     color: var(--warning);
+    background-color: rgba(245, 158, 11, 0.1);
 }
 
 .error-icon {
     color: var(--danger);
+    background-color: rgba(239, 68, 68, 0.1);
 }
 
 .success-icon {
     color: var(--success);
+    background-color: rgba(16, 185, 129, 0.1);
 }
 
 .warning-list,
@@ -1427,4 +1532,37 @@ img {
     font-weight: 500;
     margin-right: 0.5rem;
     margin-bottom: 0.25rem;
+}
+
+/* MRO (Multiple Reordering) Styles */
+.preview-reordering {
+    margin-bottom: 0.75rem;
+}
+
+.preview-reordering-items {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background-color: var(--gray-50);
+    border-radius: calc(var(--radius) - 0.25rem);
+}
+
+.reordering-items-list {
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+    padding-left: 0;
+}
+
+.reordering-items-list li {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: calc(var(--radius) - 0.25rem);
+    border-left: 2px solid var(--primary);
+}
+
+.preview-reordering-answer {
+    padding: 0.75rem;
+    background-color: rgba(16, 185, 129, 0.1);
+    border-radius: calc(var(--radius) - 0.25rem);
+    border-left: 3px solid var(--success);
 }

@@ -79,11 +79,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const fillAnswerContainer = document.getElementById('fillAnswerContainer');
     const mpMatchingContainer = document.getElementById('mpMatchingContainer');
     const mddmDragDropContainer = document.getElementById('mddmDragDropContainer');
+    const mroReorderingContainer = document.getElementById('mroReorderingContainer');
     const optionsContainer = document.getElementById('optionsContainer');
     const statementsContainer = document.getElementById('statementsContainer');
     const leftItemsContainer = document.getElementById('leftItemsContainer');
     const rightItemsContainer = document.getElementById('rightItemsContainer');
     const dragDropOptionsContainer = document.getElementById('dragDropOptionsContainer');
+    const reorderItemsContainer = document.getElementById('reorderItemsContainer');
     const correctAnswersContainer = document.getElementById('correctAnswersContainer');
     const correctAnswersContainerTF = document.getElementById('correctAnswersContainerTF');
     const editAnswer = document.getElementById('editAnswer');
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const addLeftItemBtn = document.getElementById('addLeftItemBtn');
     const addRightItemBtn = document.getElementById('addRightItemBtn');
     const addDragDropOptionBtn = document.getElementById('addDragDropOptionBtn');
+    const addReorderItemBtn = document.getElementById('addReorderItemBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const saveEditBtn = document.getElementById('saveEditBtn');
 
@@ -541,11 +544,44 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Biến lưu timeout để có thể clear khi cần
+    let messageTimeout = null;
+
     // Ẩn tất cả thông báo
     function hideAllMessages() {
+        // Clear timeout cũ nếu có
+        if (messageTimeout) {
+            clearTimeout(messageTimeout);
+            messageTimeout = null;
+        }
+
+        warningContainer.classList.remove('fade-out');
+        errorContainer.classList.remove('fade-out');
+        successContainer.classList.remove('fade-out');
+
         warningContainer.style.display = 'none';
         errorContainer.style.display = 'none';
         successContainer.style.display = 'none';
+    }
+
+    // Hàm tự động ẩn message sau 5 giây
+    function autoHideMessage(container) {
+        // Clear timeout cũ nếu có
+        if (messageTimeout) {
+            clearTimeout(messageTimeout);
+        }
+
+        // Set timeout mới
+        messageTimeout = setTimeout(() => {
+            // Thêm class fade-out để trigger animation
+            container.classList.add('fade-out');
+
+            // Sau khi animation kết thúc (300ms), ẩn hoàn toàn
+            setTimeout(() => {
+                container.style.display = 'none';
+                container.classList.remove('fade-out');
+            }, 300);
+        }, 5000); // 5 giây
     }
 
     // Hiển thị cảnh báo
@@ -564,6 +600,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         warningContainer.style.display = 'block';
+        autoHideMessage(warningContainer);
     }
 
     // Hiển thị lỗi
@@ -582,6 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         errorContainer.style.display = 'block';
+        autoHideMessage(errorContainer);
     }
 
     // Hiển thị thông báo thành công
@@ -590,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function () {
         successContainer.style.display = 'block';
         warningContainer.style.display = 'none';
         errorContainer.style.display = 'none';
+        autoHideMessage(successContainer);
     }
 
     // Cập nhật số lượng câu hỏi
@@ -1225,6 +1264,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'none';
                 mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'none';
 
                 // Clear and populate options
                 optionsContainer.innerHTML = '';
@@ -1270,6 +1310,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'none';
                 mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'none';
 
                 // Clear and populate statements
                 statementsContainer.innerHTML = '';
@@ -1315,6 +1356,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'none';
                 mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'none';
 
                 editAnswer.value = question.answers || '';
             }
@@ -1326,6 +1368,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'block';
                 mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'none';
 
                 // Clear and populate left items
                 leftItemsContainer.innerHTML = '';
@@ -1371,6 +1414,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'none';
                 mddmDragDropContainer.style.display = 'block';
+                mroReorderingContainer.style.display = 'none';
 
                 // Clear and populate drag drop options
                 dragDropOptionsContainer.innerHTML = '';
@@ -1398,6 +1442,55 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
+            // Set items for MRO (Multiple Reordering)
+            else if (question.type === 'MRO') {
+                mcOptionsContainer.style.display = 'none';
+                tfStatementsContainer.style.display = 'none';
+                fillAnswerContainer.style.display = 'none';
+                mpMatchingContainer.style.display = 'none';
+                mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'block';
+
+                // Clear and populate reorder items
+                reorderItemsContainer.innerHTML = '';
+                if (question.items && Array.isArray(question.items)) {
+                    question.items.forEach((item, i) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'form-group';
+
+                        // Create input group
+                        const inputGroup = document.createElement('div');
+                        inputGroup.className = 'input-group';
+
+                        // Create input
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'form-control reorder-item-input';
+                        input.value = item; // Safely set value
+                        input.dataset.index = i;
+
+                        // Create remove button
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn-remove-reorder-item btn-secondary';
+                        removeBtn.dataset.index = i;
+                        removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+
+                        // Add event listener to remove button
+                        removeBtn.addEventListener('click', function () {
+                            itemDiv.remove();
+                        });
+
+                        // Assemble
+                        inputGroup.appendChild(input);
+                        inputGroup.appendChild(removeBtn);
+                        itemDiv.appendChild(inputGroup);
+                        reorderItemsContainer.appendChild(itemDiv);
+                    });
+                }
+                // Note: correctAnswer will be auto-generated as [0, 1, 2, ...] based on items length
+            }
+
             // Default case - hide all type-specific containers
             else {
                 mcOptionsContainer.style.display = 'none';
@@ -1405,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fillAnswerContainer.style.display = 'none';
                 mpMatchingContainer.style.display = 'none';
                 mddmDragDropContainer.style.display = 'none';
+                mroReorderingContainer.style.display = 'none';
             }
 
             // Show modal
@@ -1514,6 +1608,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 updatedQuestion.options = options;
                 updatedQuestion.correctAnswer = correctAnswer;
+            }
+            else if (type === 'MRO') {
+                // Get reorder items
+                const reorderItemInputs = document.querySelectorAll('.reorder-item-input');
+                const items = Array.from(reorderItemInputs).map(input => input.value);
+                updatedQuestion.items = items;
             }
 
             // Update data
@@ -1724,6 +1824,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Add reorder item to MRO question
+    function addReorderItem() {
+        const itemIndex = document.querySelectorAll('.reorder-item-input').length;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'form-group';
+        itemDiv.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="form-control reorder-item-input" value="" data-index="${itemIndex}">
+                <button type="button" class="btn-remove-reorder-item btn-secondary" data-index="${itemIndex}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        reorderItemsContainer.appendChild(itemDiv);
+
+        // Add event listener to remove button
+        itemDiv.querySelector('.btn-remove-reorder-item').addEventListener('click', function () {
+            this.closest('.form-group').remove();
+        });
+    }
+
     // Handle question type change in edit modal
     editType.addEventListener('change', function () {
         const type = this.value;
@@ -1732,14 +1853,44 @@ document.addEventListener('DOMContentLoaded', function () {
             mcOptionsContainer.style.display = 'block';
             tfStatementsContainer.style.display = 'none';
             fillAnswerContainer.style.display = 'none';
+            mpMatchingContainer.style.display = 'none';
+            mddmDragDropContainer.style.display = 'none';
+            mroReorderingContainer.style.display = 'none';
         } else if (type === 'TF') {
             mcOptionsContainer.style.display = 'none';
             tfStatementsContainer.style.display = 'block';
             fillAnswerContainer.style.display = 'none';
+            mpMatchingContainer.style.display = 'none';
+            mddmDragDropContainer.style.display = 'none';
+            mroReorderingContainer.style.display = 'none';
         } else if (type === 'SA') {
             mcOptionsContainer.style.display = 'none';
             tfStatementsContainer.style.display = 'none';
             fillAnswerContainer.style.display = 'block';
+            mpMatchingContainer.style.display = 'none';
+            mddmDragDropContainer.style.display = 'none';
+            mroReorderingContainer.style.display = 'none';
+        } else if (type === 'MP') {
+            mcOptionsContainer.style.display = 'none';
+            tfStatementsContainer.style.display = 'none';
+            fillAnswerContainer.style.display = 'none';
+            mpMatchingContainer.style.display = 'block';
+            mddmDragDropContainer.style.display = 'none';
+            mroReorderingContainer.style.display = 'none';
+        } else if (type === 'MDDM') {
+            mcOptionsContainer.style.display = 'none';
+            tfStatementsContainer.style.display = 'none';
+            fillAnswerContainer.style.display = 'none';
+            mpMatchingContainer.style.display = 'none';
+            mddmDragDropContainer.style.display = 'block';
+            mroReorderingContainer.style.display = 'none';
+        } else if (type === 'MRO') {
+            mcOptionsContainer.style.display = 'none';
+            tfStatementsContainer.style.display = 'none';
+            fillAnswerContainer.style.display = 'none';
+            mpMatchingContainer.style.display = 'none';
+            mddmDragDropContainer.style.display = 'none';
+            mroReorderingContainer.style.display = 'block';
         }
     });
 
@@ -2168,6 +2319,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 html += '</div>';
             }
 
+            if (item.type === 'MRO') {
+                html += '<div class="preview-reordering">';
+                html += '<div class="preview-reordering-items">';
+                html += '<strong>Các mục sắp xếp(thứ tự đúng):</strong>';
+                html += '<ol class="reordering-items-list">';
+
+                if (item.items && Array.isArray(item.items)) {
+                    item.items.forEach((itemText, i) => {
+                        html += `<li>${renderMathInText(itemText)}</li>`;
+                    });
+                }
+
+                html += '</ol>';
+                html += '</div>';
+
+                if (item.correctAnswer && Array.isArray(item.correctAnswer)) {
+                    html += '<div class="preview-reordering-answer">';
+                    html += '<strong>Thứ tự đúng:</strong> ';
+                    html += item.correctAnswer.map((index, pos) => {
+                        const itemText = item.items && item.items[index] ? item.items[index] : `Chỉ số ${index}`;
+                        return `<span class="correct-answer-badge">${pos + 1}. ${renderMathInText(itemText)}</span>`;
+                    }).join(' → ');
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            }
+
             // Details section
             html += '<div class="preview-details">';
 
@@ -2491,6 +2670,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     html += '</div>';
                 }
 
+                if (item.type === 'MRO') {
+                    html += '<div class="preview-reordering">';
+                    html += '<div class="preview-reordering-items">';
+                    html += '<strong>Các mục sắp xếp(thứ tự đúng):</strong>';
+                    html += '<ol class="reordering-items-list">';
+
+                    if (item.items && Array.isArray(item.items)) {
+                        item.items.forEach((itemText, i) => {
+                            html += `<li>${renderMathInText(itemText)}</li>`;
+                        });
+                    }
+
+                    html += '</ol>';
+                    html += '</div>';
+
+                    if (item.correctAnswer && Array.isArray(item.correctAnswer)) {
+                        html += '<div class="preview-reordering-answer">';
+                        html += '<strong>Thứ tự đúng:</strong> ';
+                        html += item.correctAnswer.map((index, pos) => {
+                            const itemText = item.items && item.items[index] ? item.items[index] : `Chỉ số ${index}`;
+                            return `<span class="correct-answer-badge">${pos + 1}. ${renderMathInText(itemText)}</span>`;
+                        }).join(' → ');
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                }
+
                 // Hiển thị các thông tin bổ sung
                 html += '<div class="preview-details">';
 
@@ -2703,6 +2910,8 @@ document.addEventListener('DOMContentLoaded', function () {
     addRightItemBtn.addEventListener('click', addRightItem);
 
     addDragDropOptionBtn.addEventListener('click', addDragDropOption);
+
+    addReorderItemBtn.addEventListener('click', addReorderItem);
 
     // AI generation event listeners
     generateSolutionBtn.addEventListener('click', generateSolution);
@@ -3012,4 +3221,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fetch data from JSON files and initialize
     fetchJSONData();
+
+    // Expose hideAllMessages to global scope for close button
+    window.hideAllMessages = hideAllMessages;
 });
