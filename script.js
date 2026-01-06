@@ -1523,8 +1523,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // Close modal
             editModal.classList.remove('active');
 
-            // Update preview
-            updatePreview();
+            // OPTIMIZED: Only update the specific question item instead of full re-render
+            updateSingleQuestionPreview(currentEditIndex, updatedQuestion);
 
             // Show success message
             showSuccess(`Đã cập nhật câu hỏi ${currentEditIndex + 1}`);
@@ -2032,6 +2032,294 @@ document.addEventListener('DOMContentLoaded', function () {
 
         html += '</div>';
         return html;
+    }
+
+    // OPTIMIZED: Update only a single question preview
+    function updateSingleQuestionPreview(index, item) {
+        try {
+            // Find the existing preview item
+            const existingItem = document.querySelector(`.preview-item[data-index="${index}"]`);
+            if (!existingItem) {
+                // If not found, do full update
+                updatePreview();
+                return;
+            }
+
+            // Build the HTML for this single question (reuse logic from updatePreview)
+            let html = `
+                <div class="preview-header">
+                    <div class="preview-checkbox-row">
+                        <div class="preview-checkbox">
+                            <input type="checkbox" class="question-checkbox" data-index="${index}" id="question-${index}">
+                            <label for="question-${index}">Chọn câu hỏi này</label>
+                        </div>
+                    </div>
+                    <div class="preview-title-row">
+                        <div class="preview-title">
+                            Câu hỏi ${index + 1}
+                            <span class="preview-type">${item.type || 'Không xác định'}</span>
+                        </div>
+                    </div>
+                    <button class="btn-edit" data-index="${index}">
+                        <i class="fas fa-edit"></i> Sửa câu hỏi
+                    </button>
+                </div>
+                <div class="preview-content">
+                    <div class="preview-question">
+                        ${renderMathInText(item.question || 'Không có câu hỏi')}
+                    </div>
+            `;
+
+            if (item.type === 'MC' || item.type === 'MMC') {
+                html += '<div class="preview-options">';
+                if (item.options && Array.isArray(item.options)) {
+                    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                    item.options.forEach((option, i) => {
+                        const isCorrect = item.correctAnswer &&
+                            item.correctAnswer.includes(optionLabels[i]);
+                        html += `
+                            <div class="preview-option ${isCorrect ? 'correct' : ''}">
+                                <strong>${optionLabels[i]}.</strong> ${renderMathInText(option)}
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+            }
+
+            if (item.type === 'TF') {
+                html += '<div class="preview-statements">';
+                if (item.statements && Array.isArray(item.statements)) {
+                    const statementLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+                    item.statements.forEach((statement, i) => {
+                        const isCorrect = item.correctAnswer &&
+                            item.correctAnswer.includes(statementLabels[i]);
+                        html += `
+                            <div class="preview-statement ${isCorrect ? 'correct' : 'incorrect'}">
+                                <span class="preview-statement-marker">${statementLabels[i]})</span>
+                                <span>${renderMathInText(statement)}</span>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+            }
+
+            if (item.type === 'SA') {
+                html += `
+                    <div class="preview-answer">
+                        <strong>Đáp án:</strong> 
+                        ${renderAnswerPositions(item.answers)}
+                    </div>
+                `;
+            }
+
+            if (item.type === 'MP') {
+                html += '<div class="preview-matching">';
+                html += '<table class="matching-table">';
+                html += '<thead><tr><th>Cột trái</th><th>Cột phải</th></tr></thead>';
+                html += '<tbody>';
+
+                const maxLength = Math.max(
+                    item.left ? item.left.length : 0,
+                    item.right ? item.right.length : 0
+                );
+
+                for (let i = 0; i < maxLength; i++) {
+                    const leftItem = item.left && item.left[i] ? renderMathInText(item.left[i]) : '';
+                    const rightItem = item.right && item.right[i] ? renderMathInText(item.right[i]) : '';
+                    html += `
+                        <tr>
+                            <td>${leftItem}</td>
+                            <td>${rightItem}</td>
+                        </tr>
+                    `;
+                }
+
+                html += '</tbody></table>';
+                html += '</div>';
+            }
+
+            if (item.type === 'MDDM') {
+                html += '<div class="preview-dragdrop">';
+                html += '<div class="preview-dragdrop-options">';
+                html += '<strong>Các lựa chọn:</strong>';
+                html += '<ol class="dragdrop-options-list">';
+
+                if (item.options && Array.isArray(item.options)) {
+                    item.options.forEach((option, i) => {
+                        html += `<li>${renderMathInText(option)}</li>`;
+                    });
+                }
+
+                html += '</ol>';
+                html += '</div>';
+
+                if (item.correctAnswer && Array.isArray(item.correctAnswer)) {
+                    html += '<div class="preview-dragdrop-answer">';
+                    html += '<strong>Đáp án đúng (theo thứ tự vị trí):</strong> ';
+                    html += item.correctAnswer.map((index, pos) => {
+                        const optionText = item.options && item.options[index] ? item.options[index] : `Chỉ số ${index}`;
+                        return `<span class="correct-answer-badge">Vị trí ${pos + 1}: ${renderMathInText(optionText)}</span>`;
+                    }).join(' ');
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            }
+
+            // Details section
+            html += '<div class="preview-details">';
+
+            // Skills
+            html += `
+                <div class="preview-detail">
+                    <div class="preview-detail-title">
+                        Kỹ năng:
+                    </div>
+                    <div class="preview-detail-content">
+                        <div class="preview-skills">
+            `;
+
+            if (item.skill && Array.isArray(item.skill) && item.skill.length > 0) {
+                item.skill.forEach(skill => {
+                    html += `
+                        <span class="preview-skill">
+                            ${skill.name}
+                            ${skill.code ? `<span style="font-size: 0.65rem; opacity: 0.7;"> (${skill.code})</span>` : ''}
+                        </span>
+                    `;
+                });
+            } else {
+                html += '<span style="color: var(--gray-500);">Không có kỹ năng</span>';
+            }
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Action words
+            html += `
+                <div class="preview-detail">
+                    <div class="preview-detail-title">
+                        Động từ chỉ thị:
+                    </div>
+                    <div class="preview-detail-content">
+                        <div class="preview-action-words">
+            `;
+
+            if (item.action_word && Array.isArray(item.action_word) && item.action_word.length > 0) {
+                item.action_word.forEach(actionWord => {
+                    html += `
+                        <span class="preview-action-word">
+                            ${actionWord.name}
+                        </span>
+                    `;
+                });
+            } else {
+                html += '<span style="color: var(--gray-500);">Không có động từ chỉ thị</span>';
+            }
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Solution
+            html += `
+                <div class="preview-detail">
+                    <div class="preview-detail-title">
+                        Lời giải chi tiết:
+                    </div>
+                    <div class="preview-detail-content preview-solution">
+                        ${item.solution ? renderMathInText(item.solution) : '<span style="color: var(--gray-500);">Không có lời giải</span>'}
+                    </div>
+                </div>
+            `;
+
+            // Hint
+            html += `
+                <div class="preview-detail">
+                    <div class="preview-detail-title">
+                        Gợi ý:
+                    </div>
+                    <div class="preview-detail-content preview-hint">
+                        ${item.hint ? renderMathInText(item.hint) : '<span style="color: var(--gray-500);">Không có gợi ý</span>'}
+                    </div>
+                </div>
+            `;
+
+            // Tags
+            html += `
+                <div class="preview-detail">
+                    <div class="preview-detail-title">
+                        Thẻ:
+                    </div>
+                    <div class="preview-detail-content">
+                        <div class="preview-tags">
+            `;
+
+            if (item.tags && Array.isArray(item.tags) && item.tags.length > 0) {
+                item.tags.forEach(tag => {
+                    html += `<span class="preview-tag">${tag}</span>`;
+                });
+            } else {
+                html += '<span style="color: var(--gray-500);">Không có thẻ</span>';
+            }
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            html += '</div>'; // End preview-details
+
+            html += '<div class="preview-meta">';
+            html += `
+                <div class="preview-meta-item">
+                    <strong>Mức độ:</strong> ${item.difficult_level || 'Không xác định'}
+                </div>
+            `;
+
+            html += '</div></div>'; // End preview-meta and preview-content
+
+            // Update the existing item's innerHTML
+            existingItem.innerHTML = html;
+
+            // Re-attach event listeners for this item
+            const editBtn = existingItem.querySelector('.btn-edit');
+            if (editBtn) {
+                editBtn.addEventListener('click', function () {
+                    const idx = parseInt(this.dataset.index);
+                    openEditModal(idx);
+                });
+            }
+
+            const checkbox = existingItem.querySelector('.question-checkbox');
+            if (checkbox) {
+                checkbox.addEventListener('change', updateSelectAllButtonState);
+            }
+
+            // Trigger MathJax rendering for this item only
+            if (window.MathJax && window.MathJax.typeset) {
+                setTimeout(() => {
+                    try {
+                        MathJax.typeset([existingItem]);
+                    } catch (err) {
+                        console.log('MathJax typeset error:', err);
+                    }
+                }, 50);
+            }
+
+        } catch (error) {
+            console.error('Error updating single question:', error);
+            // Fallback to full update
+            updatePreview();
+        }
     }
 
     // Cập nhật xem trước
