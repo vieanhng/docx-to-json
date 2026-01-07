@@ -262,6 +262,231 @@ document.addEventListener('DOMContentLoaded', function () {
     // File upload handling
     fileInput.addEventListener('change', handleFileSelect);
 
+    // ============================================
+    // UPLOAD TABS FUNCTIONALITY
+    // ============================================
+    const uploadTabs = document.querySelectorAll('.upload-tab');
+    const uploadTabContents = document.querySelectorAll('.upload-tab-content');
+
+    uploadTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+
+            // Remove active class from all tabs and contents
+            uploadTabs.forEach(t => t.classList.remove('active'));
+            uploadTabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(`${tabName}TabContent`).classList.add('active');
+        });
+    });
+
+    // ============================================
+    // AI INPUT TABS FUNCTIONALITY
+    // ============================================
+    const aiInputTabs = document.querySelectorAll('.ai-input-tab');
+    const aiInputContents = document.querySelectorAll('.ai-input-content');
+
+    aiInputTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const inputType = tab.dataset.input;
+
+            // Remove active class from all tabs and contents
+            aiInputTabs.forEach(t => t.classList.remove('active'));
+            aiInputContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(`${inputType}InputContent`).classList.add('active');
+        });
+    });
+
+    // ============================================
+    // IMAGE UPLOAD AND PREVIEW
+    // ============================================
+    const imageInput = document.getElementById('imageInput');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const recognizeImageBtn = document.getElementById('recognizeImageBtn');
+    let uploadedImages = [];
+
+    imageInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+
+        files.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+                    uploadedImages.push({
+                        file: file,
+                        dataUrl: event.target.result
+                    });
+                    renderImagePreviews();
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Show recognize button if images are uploaded
+        if (files.length > 0) {
+            recognizeImageBtn.style.display = 'block';
+        }
+    });
+
+    function renderImagePreviews() {
+        imagePreviewContainer.innerHTML = '';
+
+        uploadedImages.forEach((image, index) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'image-preview-item';
+
+            previewItem.innerHTML = `
+                <img src="${image.dataUrl}" alt="Preview ${index + 1}">
+                <button class="image-preview-remove" data-index="${index}">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            imagePreviewContainer.appendChild(previewItem);
+        });
+
+        // Add event listeners to remove buttons
+        document.querySelectorAll('.image-preview-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                uploadedImages.splice(index, 1);
+                renderImagePreviews();
+
+                // Hide recognize button if no images
+                if (uploadedImages.length === 0) {
+                    recognizeImageBtn.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // ============================================
+    // AI RECOGNITION - IMAGE
+    // ============================================
+    recognizeImageBtn.addEventListener('click', async () => {
+        if (uploadedImages.length === 0) {
+            showErrors(['Vui lòng tải lên ít nhất một ảnh']);
+            return;
+        }
+
+        setButtonLoading(recognizeImageBtn, true);
+        showSuccess('Đang nhận diện câu hỏi từ ảnh...');
+
+        try {
+            // Convert images to base64 for API
+            const imageDataArray = uploadedImages.map(img => img.dataUrl);
+
+            const response = await fetch(`${apiUrl}/recognize-image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ images: imageDataArray })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Nhận diện thất bại');
+            }
+
+            // Update JSON editor with recognized questions
+            const currentData = jsonEditor.value ? JSON.parse(jsonEditor.value) : [];
+            const newData = Array.isArray(currentData) ? currentData : [];
+
+            if (Array.isArray(data.questions)) {
+                newData.push(...data.questions);
+            }
+
+            jsonEditor.value = JSON.stringify(newData, null, 2);
+
+            // Hide editor and show preview
+            document.querySelector('.editor-content').style.display = 'none';
+            document.querySelector('.main-container').classList.remove('two-columns');
+
+            updatePreview();
+            showSuccess(`Đã nhận diện thành công ${data.questions.length} câu hỏi từ ảnh`);
+
+            // Clear uploaded images
+            uploadedImages = [];
+            renderImagePreviews();
+            recognizeImageBtn.style.display = 'none';
+            imageInput.value = '';
+
+        } catch (error) {
+            showErrors([error.message]);
+        } finally {
+            setButtonLoading(recognizeImageBtn, false);
+        }
+    });
+
+    // ============================================
+    // AI RECOGNITION - TEXT
+    // ============================================
+    const textInput = document.getElementById('textInput');
+    const recognizeTextBtn = document.getElementById('recognizeTextBtn');
+
+    recognizeTextBtn.addEventListener('click', async () => {
+        const text = textInput.value.trim();
+
+        if (!text) {
+            showErrors(['Vui lòng nhập nội dung câu hỏi']);
+            return;
+        }
+
+        setButtonLoading(recognizeTextBtn, true);
+        showSuccess('Đang nhận diện câu hỏi từ text...');
+
+        try {
+            const response = await fetch(`${apiUrl}/recognize-text`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Nhận diện thất bại');
+            }
+
+            // Update JSON editor with recognized questions
+            const currentData = jsonEditor.value ? JSON.parse(jsonEditor.value) : [];
+            const newData = Array.isArray(currentData) ? currentData : [];
+
+            if (Array.isArray(data.questions)) {
+                newData.push(...data.questions);
+            }
+
+            jsonEditor.value = JSON.stringify(newData, null, 2);
+
+            // Hide editor and show preview
+            document.querySelector('.editor-content').style.display = 'none';
+            document.querySelector('.main-container').classList.remove('two-columns');
+
+            updatePreview();
+            showSuccess(`Đã nhận diện thành công ${data.questions.length} câu hỏi từ text`);
+
+            // Clear text input
+            textInput.value = '';
+
+        } catch (error) {
+            showErrors([error.message]);
+        } finally {
+            setButtonLoading(recognizeTextBtn, false);
+        }
+    });
+
+
     // Drag and drop handling
     fileUploadContainer.addEventListener('dragover', function (e) {
         e.preventDefault();

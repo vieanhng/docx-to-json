@@ -140,18 +140,82 @@
                     </div>
                 </div>
                 <div class="panel-content">
-                    <div class="file-upload-container" id="fileUploadContainer">
-                        <label for="fileInput" class="file-upload-label">
-                            <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
-                            <p class="file-upload-text">Kéo thả file JSON hoặc Word (.docx) vào đây hoặc nhấn để chọn
-                                file</p>
-                        </label>
-                        <input type="file" id="fileInput" accept=".json,.docx">
-                        <div class="file-info" id="fileInfo">
-                            <div class="file-info-name" id="fileName"></div>
-                            <div class="file-info-size" id="fileSize"></div>
+                    <!-- Upload Tabs -->
+                    <div class="upload-tabs">
+                        <button class="upload-tab active" data-tab="file">
+                            <i class="fas fa-file-upload"></i>
+                            Upload File
+                        </button>
+                        <button class="upload-tab" data-tab="ai">
+                            <i class="fas fa-brain"></i>
+                            Nhập bằng ảnh/Text (coming soon...)
+                        </button>
+                    </div>
+
+                    <!-- File Upload Tab Content -->
+                    <div class="upload-tab-content active" id="fileTabContent">
+                        <div class="file-upload-container" id="fileUploadContainer">
+                            <label for="fileInput" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+                                <p class="file-upload-text">Kéo thả file JSON hoặc Word (.docx) vào đây hoặc nhấn để
+                                    chọn
+                                    file</p>
+                            </label>
+                            <input type="file" id="fileInput" accept=".json,.docx">
+                            <div class="file-info" id="fileInfo">
+                                <div class="file-info-name" id="fileName"></div>
+                                <div class="file-info-size" id="fileSize"></div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- AI Recognition Tab Content -->
+                    <div class="upload-tab-content" id="aiTabContent">
+                        <div class="ai-input-container">
+                            <div class="ai-input-tabs">
+                                <button class="ai-input-tab active" data-input="image">
+                                    <i class="fas fa-image"></i>
+                                    Ảnh
+                                </button>
+                                <button class="ai-input-tab" data-input="text">
+                                    <i class="fas fa-keyboard"></i>
+                                    Text
+                                </button>
+                            </div>
+
+                            <!-- Image Input -->
+                            <div class="ai-input-content active" id="imageInputContent">
+                                <div class="image-upload-area" id="imageUploadArea">
+                                    <label for="imageInput" class="image-upload-label">
+                                        <i class="fas fa-camera file-upload-icon"></i>
+                                        <p class="file-upload-text">Tải lên ảnh câu hỏi để AI nhận diện</p>
+                                        <small>Hỗ trợ: JPG, PNG, JPEG</small>
+                                    </label>
+                                    <input type="file" id="imageInput" accept="image/*" multiple>
+                                </div>
+                                <div class="image-preview-container" id="imagePreviewContainer"></div>
+                                <button id="recognizeImageBtn" class="btn-primary"
+                                    style="display: none; margin-top: 1rem;">
+                                    <i class="fas fa-magic"></i>
+                                    Nhận diện câu hỏi
+                                </button>
+                            </div>
+
+                            <!-- Text Input -->
+                            <div class="ai-input-content" id="textInputContent">
+                                <div class="text-input-area">
+                                    <label class="form-label">Nhập nội dung câu hỏi:</label>
+                                    <textarea id="textInput" class="form-control" rows="10"
+                                        placeholder="Nhập hoặc dán nội dung câu hỏi vào đây...&#10;&#10;Ví dụ:&#10;Câu 1: Tính đạo hàm của hàm số y = x^2 + 3x - 1&#10;A. y' = 2x + 3&#10;B. y' = x + 3&#10;C. y' = 2x&#10;D. y' = 3x"></textarea>
+                                    <button id="recognizeTextBtn" class="btn-primary" style="margin-top: 1rem;">
+                                        <i class="fas fa-magic"></i>
+                                        Nhận diện câu hỏi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="editor-content">
                         <textarea id="jsonEditor"
                             placeholder="Nội dung JSON sẽ hiển thị ở đây sau khi tải lên..."></textarea>
