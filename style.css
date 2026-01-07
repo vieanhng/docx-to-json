@@ -830,6 +830,49 @@ input:checked+.slider:before {
     font-size: 0.75rem;
 }
 
+/* Sample File Link Styles */
+.sample-file-link {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(129, 140, 248, 0.05) 100%);
+    border: 1px solid var(--primary-light);
+    border-radius: calc(var(--radius) - 0.25rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.sample-file-link:hover {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.sample-file-link i {
+    color: var(--primary);
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.sample-file-link:hover i {
+    transform: scale(1.1);
+}
+
+.sample-file-link a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+}
+
+.sample-file-link:hover a {
+    color: var(--primary-dark);
+}
+
 /* Upload Tabs Styles */
 .upload-tabs {
     display: flex;
