@@ -1423,10 +1423,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Set form values
             editType.value = question.type || 'MC';
-            editQuestion.value = question.question || '';
+
+            // Toggle between rich editor and simple textarea based on question type
+            const questionType = question.type || 'MC';
+            const useSimpleEditor = questionType === 'MDDM' || questionType === 'MRO';
+
+            const richEditor = document.getElementById('editQuestionRich');
+            const simpleEditor = document.getElementById('editQuestionSimple');
+            const qlToolbar = document.getElementById('editModal').getElementsByClassName('ql-toolbar')[0];
+            if (useSimpleEditor) {
+                // Use simple textarea for MDDM and MRO
+                richEditor.style.display = 'none';
+                simpleEditor.style.display = 'block';
+                simpleEditor.value = question.question || '';
+                qlToolbar.style.display = 'none';
+            } else {
+                // Use Quill rich editor for other types
+                richEditor.style.display = 'block';
+                simpleEditor.style.display = 'none';
+                qlToolbar.style.display = 'block';
+                if (window.quillHelpers && window.quillHelpers.setContent) {
+                    window.quillHelpers.setContent('question', question.question || '');
+                }
+            }
+
             editDifficultLevel.value = question.difficult_level || '';
-            editSolution.value = question.solution || '';
-            editHint.value = question.hint || '';
+            // Use Quill editor for solution
+            if (window.quillHelpers && window.quillHelpers.setContent) {
+                window.quillHelpers.setContent('solution', question.solution || '');
+            }
+            // Use Quill editor for hint
+            if (window.quillHelpers && window.quillHelpers.setContent) {
+                window.quillHelpers.setContent('hint', question.hint || '');
+            }
             editTags.value = question.tags ? question.tags.join(', ') : '';
 
             // Set selected skills
@@ -1745,10 +1774,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Get form values
             const type = editType.value;
-            const question = editQuestion.value;
+
+            // Get question content from appropriate editor
+            let question = '';
+            const useSimpleEditor = type === 'MDDM' || type === 'MRO';
+
+            if (useSimpleEditor) {
+                // Get from simple textarea for MDDM and MRO
+                const simpleEditor = document.getElementById('editQuestionSimple');
+                question = simpleEditor ? simpleEditor.value : '';
+            } else {
+                // Get from Quill editor for other types
+                question = window.quillHelpers && window.quillHelpers.getContent
+                    ? window.quillHelpers.getContent('question')
+                    : '';
+            }
             const difficultLevel = editDifficultLevel.value;
-            const solution = editSolution.value;
-            const hint = editHint.value;
+            // Get solution from Quill editor
+            const solution = window.quillHelpers && window.quillHelpers.getContent
+                ? window.quillHelpers.getContent('solution')
+                : '';
+            // Get hint from Quill editor
+            const hint = window.quillHelpers && window.quillHelpers.getContent
+                ? window.quillHelpers.getContent('hint')
+                : '';
             const tags = editTags.value.split(',').map(tag => tag.trim()).filter(tag => tag);
 
             // Create updated question object
@@ -2121,7 +2170,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hàm tạo lời giải bằng AI
     function generateSolution() {
-        const question = editQuestion.value;
+        // Get question content from Quill editor
+        const question = window.quillHelpers && window.quillHelpers.getContent
+            ? window.quillHelpers.getContent('question')
+            : '';
         const type = editType.value;
 
         showWarnings(['Chức năng đang phát triển']);
@@ -2131,7 +2183,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hàm tạo gợi ý bằng AI
     async function generateHint() {
-        const question = editQuestion.value;
+        // Get question content from Quill editor
+        const question = window.quillHelpers && window.quillHelpers.getContent
+            ? window.quillHelpers.getContent('question')
+            : '';
 
         if (!question) {
             showErrors(['Vui lòng nhập nội dung câu hỏi trước khi tạo gợi ý']);
@@ -2147,8 +2202,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Chờ hàm genHint hoàn thành và trả về kết quả
             const hint = await genHint(question);
 
-            // Điền gợi ý vào textarea
-            editHint.value = hint;
+            // Set hint vào Quill editor
+            if (window.quillHelpers && window.quillHelpers.setContent) {
+                window.quillHelpers.setContent('hint', hint);
+            }
 
             // Hiển thị thông báo thành công
             showSuccess('Đã tạo gợi ý bằng AI thành công');
@@ -3446,6 +3503,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fetch data from JSON files and initialize
     fetchJSONData();
+
+    // Add event listener for question type change to toggle editor
+    if (editType) {
+        editType.addEventListener('change', function () {
+            const questionType = this.value;
+            const useSimpleEditor = questionType === 'MDDM' || questionType === 'MRO';
+
+            const richEditor = document.getElementById('editQuestionRich');
+            const simpleEditor = document.getElementById('editQuestionSimple');
+
+            if (useSimpleEditor) {
+                // Switch to simple textarea
+                if (richEditor) richEditor.style.display = 'none';
+                if (simpleEditor) simpleEditor.style.display = 'block';
+            } else {
+                // Switch to rich editor
+                if (richEditor) richEditor.style.display = 'block';
+                if (simpleEditor) simpleEditor.style.display = 'none';
+            }
+        });
+    }
 
     // Expose hideAllMessages to global scope for close button
     window.hideAllMessages = hideAllMessages;
