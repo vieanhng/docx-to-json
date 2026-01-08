@@ -2074,3 +2074,19 @@ img {
     border-radius: calc(var(--radius) - 0.25rem);
     border-left: 3px solid var(--success);
 }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    border: 2px solid var(--gray-400);
+    padding: 0.5rem;
+    text-align: left;
+}
+
+table th {
+    background-color: var(--gray-100);
+}
