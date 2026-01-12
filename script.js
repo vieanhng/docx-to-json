@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const errorList = document.getElementById('errorList');
     const successContainer = document.getElementById('successContainer');
     const successMessage = document.getElementById('successMessage');
+    const progressContainerWrapper = document.getElementById('progressContainerWrapper');
 
     // File upload elements
     const fileInput = document.getElementById('fileInput');
@@ -855,6 +856,126 @@ document.addEventListener('DOMContentLoaded', function () {
         errorContainer.style.display = 'none';
         autoHideMessage(successContainer);
     }
+
+    // Multi-Progress System
+    const progressItems = new Map(); // Store progress items by ID
+
+    // Tạo progress item mới
+    function createProgressItem(id, title, total) {
+        // Remove existing item if it exists
+        if (progressItems.has(id)) {
+            removeProgressItem(id);
+        }
+
+        const progressItem = document.createElement('div');
+        progressItem.className = 'progress-item';
+        progressItem.id = `progress-${id}`;
+        progressItem.innerHTML = `
+            <div class="progress-header">
+                <div class="progress-title">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span class="progress-title-text">${title}</span>
+                </div>
+                <div class="progress-stats">
+                    <span class="progress-current">0</span>/<span class="progress-total">${total}</span>
+                </div>
+                <button class="progress-close" onclick="removeProgressItem('${id}')">&times;</button>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar"></div>
+            </div>
+            <div class="progress-message"></div>
+        `;
+
+        progressContainerWrapper.appendChild(progressItem);
+
+        progressItems.set(id, {
+            element: progressItem,
+            total: total,
+            current: 0
+        });
+
+        return progressItem;
+    }
+
+    // Cập nhật progress item
+    function updateProgressItem(id, current, message = '') {
+        const item = progressItems.get(id);
+        if (!item) return;
+
+        item.current = current;
+        const percentage = (current / item.total) * 100;
+
+        const progressBar = item.element.querySelector('.progress-bar');
+        const progressCurrent = item.element.querySelector('.progress-current');
+        const progressMessage = item.element.querySelector('.progress-message');
+
+        progressBar.style.width = percentage + '%';
+        progressCurrent.textContent = current;
+
+        if (message) {
+            progressMessage.textContent = message;
+        }
+    }
+
+    // Đánh dấu progress item hoàn thành
+    function completeProgressItem(id, message = 'Hoàn thành!') {
+        const item = progressItems.get(id);
+        if (!item) return;
+
+        item.element.classList.add('completed');
+
+        const icon = item.element.querySelector('.progress-title i');
+        icon.className = 'fas fa-check-circle';
+
+        const progressBar = item.element.querySelector('.progress-bar');
+        progressBar.style.width = '100%';
+
+        const progressMessage = item.element.querySelector('.progress-message');
+        progressMessage.textContent = message;
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            removeProgressItem(id);
+        }, 5000);
+    }
+
+    // Đánh dấu progress item lỗi
+    function errorProgressItem(id, message = 'Có lỗi xảy ra!') {
+        const item = progressItems.get(id);
+        if (!item) return;
+
+        item.element.classList.add('error');
+
+        const icon = item.element.querySelector('.progress-title i');
+        icon.className = 'fas fa-exclamation-circle';
+
+        const progressMessage = item.element.querySelector('.progress-message');
+        progressMessage.textContent = message;
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            removeProgressItem(id);
+        }, 5000);
+    }
+
+    // Xóa progress item
+    function removeProgressItem(id) {
+        const item = progressItems.get(id);
+        if (!item) return;
+
+        item.element.classList.add('removing');
+
+        setTimeout(() => {
+            if (item.element.parentNode) {
+                item.element.parentNode.removeChild(item.element);
+            }
+            progressItems.delete(id);
+        }, 300); // Match animation duration
+    }
+
+    // Expose removeProgressItem to global scope for onclick
+    window.removeProgressItem = removeProgressItem;
 
     // Cập nhật số lượng câu hỏi
     function updateQuestionStats(data) {
@@ -2249,19 +2370,28 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const progressId = 'hint-' + Date.now();
+
         // Hiển thị trạng thái đang tải
         batchGenerateHintBtn.disabled = true;
         batchGenerateHintBtn.classList.add('loading');
+
+        // Tạo progress item
+        createProgressItem(progressId, 'Đang tạo gợi ý...', checkboxes.length);
 
         try {
             const data = JSON.parse(jsonEditor.value);
 
             // *** THAY ĐỔI CHÍNH BẮT ĐẦU TỪ ĐÂY ***
             // Sử dụng vòng lặp for...of để xử lý tuần tự thay vì Promise.all
+            let processedCount = 0;
             for (const checkbox of checkboxes) {
                 const index = parseInt(checkbox.dataset.index);
                 if (index >= 0 && index < data.length) {
                     const question = data[index];
+
+                    // Cập nhật progress
+                    updateProgressItem(progressId, processedCount, `Đang xử lý câu hỏi ${index + 1}...`);
 
                     // Dùng await để đợi từng request hoàn thành trước khi sang vòng lặp tiếp theo
                     const hint = await genHint(question.raw[HEADER_REFERENCE.CONTENT] + "HD giải: " + question.raw[HEADER_REFERENCE.EXPLANATION]);
@@ -2270,20 +2400,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].hint = replaceLatexCommands(hint);
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updatePreview();
+                    updateSingleQuestionPreview(index);
+
+                    processedCount++;
+                    updateProgressItem(progressId, processedCount, `Đã hoàn thành ${processedCount}/${checkboxes.length} câu hỏi`);
                 }
             }
 
 
 
 
-            // Xóa trạng thái đang tải
             batchGenerateHintBtn.disabled = false;
             batchGenerateHintBtn.classList.remove('loading');
-
-            showSuccess(`Đã tạo gợi ý cho ${checkboxes.length} câu hỏi thành công`);
+            // Đánh dấu hoàn thành
+            completeProgressItem(progressId, `Đã tạo gợi ý cho ${checkboxes.length} câu hỏi thành công`);
         } catch (error) {
             showErrors([`Lỗi khi tạo gợi ý hàng loạt: ${error.message}`]);
+            errorProgressItem(progressId, error.message);
             batchGenerateHintBtn.disabled = false;
             batchGenerateHintBtn.classList.remove('loading');
         }
@@ -2297,6 +2430,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const progressId = 'actionwords-' + Date.now();
+
+        // Tạo progress item
+        createProgressItem(progressId, 'Đang tạo động từ chỉ thị...', checkboxes.length);
+
         // Hiển thị trạng thái đang tải
         batchGenerateActionWordsBtn.disabled = true;
         batchGenerateActionWordsBtn.classList.add('loading');
@@ -2307,10 +2445,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // *** THAY ĐỔI CHÍNH BẮT ĐẦU TỪ ĐÂY ***
             // Sử dụng vòng lặp for...of để xử lý tuần tự thay vì Promise.all
+            let processedCount = 0;
             for (const checkbox of checkboxes) {
                 const index = parseInt(checkbox.dataset.index);
                 if (index >= 0 && index < data.length) {
                     const question = data[index];
+
+                    // Cập nhật progress
+                    updateProgressItem(progressId, processedCount, `Đang xử lý câu hỏi ${index + 1}...`);
 
                     // Dùng await để đợi từng request hoàn thành trước khi sang vòng lặp tiếp theo
                     const actionWords = await genActionWord(question.raw[HEADER_REFERENCE.CONTENT], question.raw[HEADER_REFERENCE.EXPLANATION], question.raw[HEADER_REFERENCE.LEVEL]);
@@ -2319,19 +2461,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].action_word = actionWords.student_competency_iids.split(",").map(item => actionWordsData.filter(ac => ac.iid == item)[0]);
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updatePreview();
+                    updateSingleQuestionPreview(index);
 
+                    processedCount++;
+                    updateProgressItem(progressId, processedCount, `Đã hoàn thành ${processedCount}/${checkboxes.length} câu hỏi`);
 
                 }
             }
 
-            // Xóa trạng thái đang tải
             batchGenerateActionWordsBtn.disabled = false;
             batchGenerateActionWordsBtn.classList.remove('loading');
-
-            showSuccess(`Đã tạo động từ chỉ thị cho ${checkboxes.length} câu hỏi thành công`);
+            // Đánh dấu hoàn thành
+            completeProgressItem(progressId, `Đã tạo động từ chỉ thị cho ${checkboxes.length} câu hỏi thành công`);
         } catch (error) {
             showErrors([`Lỗi khi tạo động từ chỉ thị hàng loạt: ${error.message}`]);
+            errorProgressItem(progressId, error.message);
             batchGenerateActionWordsBtn.disabled = false;
             batchGenerateActionWordsBtn.classList.remove('loading');
         }
@@ -2344,6 +2488,11 @@ document.addEventListener('DOMContentLoaded', function () {
             showErrors(['Vui lòng chọn ít nhất một câu hỏi để tạo thẻ']);
             return;
         }
+
+        const progressId = 'tags-' + Date.now();
+
+        // Tạo progress item
+        createProgressItem(progressId, 'Đang tạo thẻ...', checkboxes.length);
 
         // Hiển thị trạng thái đang tải
         batchGenerateTagsBtn.disabled = true;
@@ -2359,6 +2508,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (index >= 0 && index < data.length) {
                     const question = data[index];
 
+                    // Cập nhật progress
+                    updateProgressItem(progressId, updatedCount, `Đang xử lý câu hỏi ${index + 1}...`);
+
                     // Tạo thẻ dựa trên loại câu hỏi và nội dung
                     let tags = await genTags(question.raw[HEADER_REFERENCE.CONTENT], question.raw[HEADER_REFERENCE.EXPLANATION], question.raw[HEADER_REFERENCE.LEVEL]);
 
@@ -2369,21 +2521,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].tags = tags;
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updatePreview();
+                    updateSingleQuestionPreview(index);
                     updatedCount++;
+                    updateProgressItem(progressId, updatedCount, `Đã hoàn thành ${updatedCount}/${checkboxes.length} câu hỏi`);
                 }
             }
 
 
-            // Xóa trạng thái đang tải
             batchGenerateTagsBtn.disabled = false;
             batchGenerateTagsBtn.classList.remove('loading');
-
-            showSuccess(`Đã tạo thẻ cho ${updatedCount} câu hỏi thành công`);
+            // Đánh dấu hoàn thành
+            completeProgressItem(progressId, `Đã tạo thẻ cho ${updatedCount} câu hỏi thành công`);
         } catch (error) {
             showErrors([`Lỗi khi tạo thẻ hàng loạt: ${error.message}`]);
             batchGenerateTagsBtn.disabled = false;
             batchGenerateTagsBtn.classList.remove('loading');
+            errorProgressItem(progressId, error.message);
         }
     }
 
