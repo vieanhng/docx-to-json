@@ -2083,10 +2083,12 @@ img {
 #digitizeModal .modal-content {
     width: 90%;
     max-width: 500px;
+    position: relative;
 }
 
 #digitizeModal .modal-body {
     padding: 20px;
+    min-height: 250px;
 }
 
 #digitizeModal .modal-header {
@@ -2252,4 +2254,71 @@ table td {
 
 table th {
     background-color: var(--gray-100);
+}
+
+/* Digitize Loading Overlay Styles */
+.digitize-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 1000;
+    border-radius: var(--radius);
+}
+
+.digitize-loading-overlay.active {
+    display: flex;
+}
+
+.digitize-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1.5rem;
+}
+
+.spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 4px solid rgba(79, 70, 229, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin-ring 1s linear infinite;
+}
+
+@keyframes spin-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    animation: pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }

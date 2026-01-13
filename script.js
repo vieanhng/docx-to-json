@@ -3377,6 +3377,21 @@ document.addEventListener('DOMContentLoaded', function () {
         digitizeModal.style.display = 'none';
     }
 
+    // Helper: Show/Hide loading overlay
+    const digitizeLoadingOverlay = document.getElementById('digitizeLoadingOverlay');
+
+    function showDigitizeLoading() {
+        if (digitizeLoadingOverlay) {
+            digitizeLoadingOverlay.classList.add('active');
+        }
+    }
+
+    function hideDigitizeLoading() {
+        if (digitizeLoadingOverlay) {
+            digitizeLoadingOverlay.classList.remove('active');
+        }
+    }
+
     // Helper: Set loading state for button
     function setButtonLoading(button, isLoading) {
         if (isLoading) {
@@ -3504,15 +3519,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event: Open digitize modal
     digitizeBtn.addEventListener('click', async () => {
-        const isLoggedIn = await checkUserLogin();
-
-        if (isLoggedIn) {
-            showDigitizeStep(2);
-        } else {
-            showDigitizeStep(1);
-        }
-
+        // Open modal first
         openDigitizeModal();
+
+        // Show loading while checking login status
+        showDigitizeLoading();
+
+        try {
+            const isLoggedIn = await checkUserLogin();
+
+            if (isLoggedIn) {
+                showDigitizeStep(2);
+            } else {
+                showDigitizeStep(1);
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error);
+            // Default to step 1 on error
+            showDigitizeStep(1);
+        } finally {
+            // Hide loading after check completes
+            hideDigitizeLoading();
+        }
     });
 
     // Event: Close modal
@@ -3524,6 +3552,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const password = document.getElementById('digitizePassword').value;
 
         setButtonLoading(digitizeLoginBtn, true);
+        showDigitizeLoading();
 
         try {
             const data = await loginToLMS(username, password);
@@ -3534,6 +3563,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showErrors([error.message]);
         } finally {
             setButtonLoading(digitizeLoginBtn, false);
+            hideDigitizeLoading();
         }
     });
 
@@ -3542,6 +3572,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const bankLink = document.getElementById('digitizeBankLink').value.trim();
 
         setButtonLoading(digitizeVerifyLinkBtn, true);
+        showDigitizeLoading();
 
         try {
             const data = await findBank(bankLink);
@@ -3553,24 +3584,25 @@ document.addEventListener('DOMContentLoaded', function () {
             showErrors([error.message]);
         } finally {
             setButtonLoading(digitizeVerifyLinkBtn, false);
+            hideDigitizeLoading();
         }
     });
 
     // Event: Confirm digitization
     digitizeConfirmBtn.addEventListener('click', async () => {
         setButtonLoading(digitizeConfirmBtn, true);
-        closeDigitizeModal();
-        showSuccess('Đang tiến hành số hóa...');
+        showDigitizeLoading();
 
         try {
             const questionsData = JSON.parse(jsonEditor.value);
             await uploadQuestions(questionsData);
             showSuccess('Số hóa thành công');
+            closeDigitizeModal();
         } catch (error) {
             showErrors([error.message]);
-            openDigitizeModal(); // Reopen modal on error
         } finally {
             setButtonLoading(digitizeConfirmBtn, false);
+            hideDigitizeLoading();
         }
     });
 
