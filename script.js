@@ -3493,7 +3493,50 @@ document.addEventListener('DOMContentLoaded', function () {
         return data;
     }
 
-    // API: Upload questions
+    // Helper: Calculate size of JSON string in bytes
+    function getByteSize(str) {
+        return new Blob([str]).size;
+    }
+
+    // Helper: Split questions into chunks that fit within size limit
+    function splitQuestionsIntoChunks(questionsData, maxSizeBytes = 3.5 * 1024 * 1024) {
+        const { token, uiid } = getUserCredentials();
+        const bankIid = localStorage.getItem('bank_iid');
+
+        // Calculate base payload size (without questionsData)
+        const basePayload = { bankIid, token, uiid, questionsData: [] };
+        const baseSize = getByteSize(JSON.stringify(basePayload));
+
+        const chunks = [];
+        let currentChunk = [];
+        let currentSize = baseSize;
+
+        for (let i = 0; i < questionsData.length; i++) {
+            const question = questionsData[i];
+            const questionSize = getByteSize(JSON.stringify(question));
+
+            // Check if adding this question would exceed the limit
+            if (currentSize + questionSize > maxSizeBytes && currentChunk.length > 0) {
+                // Save current chunk and start a new one
+                chunks.push([...currentChunk]);
+                currentChunk = [question];
+                currentSize = baseSize + questionSize;
+            } else {
+                // Add question to current chunk
+                currentChunk.push(question);
+                currentSize += questionSize;
+            }
+        }
+
+        // Add the last chunk if it has any questions
+        if (currentChunk.length > 0) {
+            chunks.push(currentChunk);
+        }
+
+        return chunks;
+    }
+
+    // API: Upload questions (optimized for 4MB limit)
     async function uploadQuestions(questionsData) {
         const { token, uiid } = getUserCredentials();
         const bankIid = localStorage.getItem('bank_iid');
@@ -3502,19 +3545,51 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error('Không có dữ liệu câu hỏi để số hóa');
         }
 
-        const response = await fetch(`${apiUrl}/upload-questions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bankIid, token, uiid, questionsData })
-        });
+        // Split questions into chunks
+        const chunks = splitQuestionsIntoChunks(questionsData);
 
-        const data = await response.json();
+        console.log(`Splitting ${questionsData.length} questions into ${chunks.length} chunk(s)`);
 
-        if (!data.success) {
-            throw new Error(data.message || 'Số hóa thất bại');
+        // Upload each chunk sequentially
+        const results = [];
+        let totalUploaded = 0;
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+
+            console.log(`Uploading chunk ${i + 1}/${chunks.length} (${chunk.length} questions)...`);
+
+            try {
+                const response = await fetch(`${apiUrl}/upload-questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bankIid, token, uiid, questionsData: chunk })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || `Số hóa thất bại ở chunk ${i + 1}/${chunks.length}`);
+                }
+
+                totalUploaded += chunk.length;
+                results.push(data);
+
+                // Show progress
+                showSuccess(`Đã tải lên ${totalUploaded}/${questionsData.length} câu hỏi...`);
+
+            } catch (error) {
+                throw new Error(`Lỗi tại chunk ${i + 1}/${chunks.length}: ${error.message}`);
+            }
         }
 
-        return data;
+        // Return combined results
+        return {
+            success: true,
+            message: `Đã tải lên thành công ${totalUploaded} câu hỏi trong ${chunks.length} lần gửi`,
+            chunks: results.length,
+            totalQuestions: totalUploaded
+        };
     }
 
     // Event: Open digitize modal
@@ -3588,6 +3663,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+
     // Event: Confirm digitization
     digitizeConfirmBtn.addEventListener('click', async () => {
         setButtonLoading(digitizeConfirmBtn, true);
@@ -3595,8 +3671,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const questionsData = JSON.parse(jsonEditor.value);
-            await uploadQuestions(questionsData);
-            showSuccess('Số hóa thành công');
+            const result = await uploadQuestions(questionsData);
+
+            // Show detailed success message
+            if (result.chunks > 1) {
+                showSuccess(`${result.message}`);
+            } else {
+                showSuccess('Số hóa thành công');
+            }
+
             closeDigitizeModal();
         } catch (error) {
             showErrors([error.message]);
