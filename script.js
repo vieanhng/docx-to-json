@@ -2400,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].hint = replaceLatexCommands(hint);
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updateSingleQuestionPreview(index);
+                    updateSingleQuestionPreview(index, jsonEditorValue[index], true);
 
                     processedCount++;
                     updateProgressItem(progressId, processedCount, `Đã hoàn thành ${processedCount}/${checkboxes.length} câu hỏi`);
@@ -2461,7 +2461,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].action_word = actionWords.student_competency_iids.split(",").map(item => actionWordsData.filter(ac => ac.iid == item)[0]);
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updateSingleQuestionPreview(index);
+                    updateSingleQuestionPreview(index, jsonEditorValue[index], true);
 
                     processedCount++;
                     updateProgressItem(progressId, processedCount, `Đã hoàn thành ${processedCount}/${checkboxes.length} câu hỏi`);
@@ -2521,7 +2521,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let jsonEditorValue = JSON.parse(jsonEditor.value);
                     jsonEditorValue[index].tags = tags;
                     jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
-                    updateSingleQuestionPreview(index);
+                    updateSingleQuestionPreview(index, jsonEditorValue[index], true);
                     updatedCount++;
                     updateProgressItem(progressId, updatedCount, `Đã hoàn thành ${updatedCount}/${checkboxes.length} câu hỏi`);
                 }
@@ -2564,7 +2564,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // OPTIMIZED: Update only a single question preview
-    function updateSingleQuestionPreview(index, item) {
+    function updateSingleQuestionPreview(index, item, checked = false) {
         try {
             // Find the existing preview item
             const existingItem = document.querySelector(`.preview-item[data-index="${index}"]`);
@@ -2578,8 +2578,8 @@ document.addEventListener('DOMContentLoaded', function () {
             let html = `
                 <div class="preview-header">
                     <div class="preview-checkbox-row">
-                        <div class="preview-checkbox">
-                            <input type="checkbox" class="question-checkbox" data-index="${index}" id="question-${index}">
+                        <div class="preview-checkbox">  
+                            <input type="checkbox" class="question-checkbox" ${checked ? 'checked' : ''} data-index="${index}" id="question-${index}">
                             <label for="question-${index}">Chọn câu hỏi này</label>
                         </div>
                     </div>
