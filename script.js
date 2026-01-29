@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const batchGenerateHintBtn = document.getElementById('batchGenerateHintBtn');
     const batchGenerateActionWordsBtn = document.getElementById('batchGenerateActionWordsBtn');
     const batchGenerateTagsBtn = document.getElementById('batchGenerateTagsBtn');
+    const batchAddTagsBtn = document.getElementById('batchAddTagsBtn');
 
     // Modal elements
     const editModal = document.getElementById('editModal');
@@ -2540,6 +2541,74 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function batchAddTags() {
+        const checkboxes = document.querySelectorAll('.question-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showErrors(['Vui lòng chọn ít nhất một câu hỏi để thêm thẻ']);
+            return;
+        }
+
+        let newTags = prompt("Nhập thẻ mới cách nhau bởi dấu phẩy:");
+
+        if (!newTags) {
+            showErrors(['Vui lòng nhập thẻ']);
+            batchAddTagsBtn.disabled = false;
+            batchAddTagsBtn.classList.remove('loading');
+            return;
+        }
+
+        newTags = newTags.split(',');
+
+        const progressId = 'add-tags-' + Date.now();
+
+        // Tạo progress item
+        createProgressItem(progressId, 'Đang thêm thẻ...', checkboxes.length);
+
+        // Hiển thị trạng thái đang tải
+        batchAddTagsBtn.disabled = true;
+        batchAddTagsBtn.classList.add('loading');
+
+        try {
+            const data = JSON.parse(jsonEditor.value);
+            let updatedCount = 0;
+
+            for (const checkbox of checkboxes) {
+                const index = parseInt(checkbox.dataset.index);
+                if (index >= 0 && index < data.length) {
+                    const question = data[index];
+
+                    // Cập nhật progress
+                    updateProgressItem(progressId, updatedCount, `Đang xử lý câu hỏi ${index + 1}...`);
+
+                    // Loại bỏ trùng lặp với thẻ đã có
+                    let currentTags = question.tags || [];
+                    newTags = newTags.filter(tag => !currentTags.includes(tag));
+
+                    // Thêm thẻ mới vào danh sách hiện có
+                    let updatedTags = [...currentTags, ...newTags];
+
+                    // Cập nhật thẻ
+                    let jsonEditorValue = JSON.parse(jsonEditor.value);
+                    jsonEditorValue[index].tags = updatedTags;
+                    jsonEditor.value = JSON.stringify(jsonEditorValue, null, 2);
+                    updateSingleQuestionPreview(index, jsonEditorValue[index], true);
+                    updatedCount++;
+                    updateProgressItem(progressId, updatedCount, `Đã hoàn thành ${updatedCount}/${checkboxes.length} câu hỏi`);
+                }
+            }
+
+            batchAddTagsBtn.disabled = false;
+            batchAddTagsBtn.classList.remove('loading');
+            // Đánh dấu hoàn thành
+            completeProgressItem(progressId, `Đã thêm thẻ cho ${updatedCount} câu hỏi thành công`);
+        } catch (error) {
+            showErrors([`Lỗi khi thêm thẻ hàng loạt: ${error.message}`]);
+            batchAddTagsBtn.disabled = false;
+            batchAddTagsBtn.classList.remove('loading');
+            errorProgressItem(progressId, error.message);
+        }
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -3265,6 +3334,7 @@ document.addEventListener('DOMContentLoaded', function () {
     batchGenerateHintBtn.addEventListener('click', batchGenerateHint);
     batchGenerateActionWordsBtn.addEventListener('click', batchGenerateActionWords);
     batchGenerateTagsBtn.addEventListener('click', batchGenerateTags);
+    batchAddTagsBtn.addEventListener('click', batchAddTags);
 
     // Modal event listeners
     document.querySelectorAll('.modal-close').forEach(button => {
