@@ -27,7 +27,67 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const apiUrl = 'https://vercel-doc-to-json.vercel.app';
+    // ============================================
+    // CONFIGURATION - CẤU HÌNH API
+    // ============================================
+    // Tất cả các URL API được quản lý tập trung tại đây
+    // Để thay đổi API endpoint, chỉ cần cập nhật giá trị tương ứng bên dưới
+
+    const CONFIG = {
+        // ========================================
+        // API chính - Xử lý file DOCX và AI Recognition
+        // ========================================
+        // API endpoint cho việc upload và xử lý file DOCX
+        // Endpoints có sẵn:
+        //   - POST /upload: Upload và convert file DOCX sang JSON
+        //   - POST /recognize-image: Nhận diện câu hỏi từ ảnh
+        //   - POST /recognize-text: Nhận diện câu hỏi từ văn bản
+        API_URL: 'https://vercel-doc-to-json.vercel.app',
+
+        // ========================================
+        // Google Apps Script APIs
+        // ========================================
+        GOOGLE_SCRIPT: {
+            // API lấy danh sách kỹ năng (skills)
+            // Query params: ?action=get-skills
+            GET_SKILLS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
+
+            // API lấy danh sách động từ hành động (action words)
+            // Query params: ?action=get-dongtu
+            GET_ACTION_WORDS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
+
+            // API tạo gợi ý (hints) cho câu hỏi
+            // POST body: { question_content: string }
+            GEN_HINTS: 'https://script.google.com/macros/s/AKfycbyKeC02IbZk2t-qG5-3qTkFkcSyYj1Xamo0lqZTt9RU_Or9C_xWrO3KhE55HxhpMg3csA/exec',
+
+            // API tạo động từ hành động cho câu hỏi
+            // POST body: { content: string, level: string, solution: string }
+            GEN_ACTION_WORD: 'https://script.google.com/macros/s/AKfycbwDt4hWU_3XM7ovCyEPvsFvRJp3klDGOuqB2NldgPXqkjNam20ufPRfpyGrHuajKsjU/exec',
+
+            // API tạo tags cho câu hỏi
+            // POST body: { content: string, level: string, solution: string }
+            GEN_TAGS: 'https://script.google.com/macros/s/AKfycbzO8jbMsnqaqKULmC42IW-Mc_vMwrQYegQI9p0crXzImohVL97NBWob7WyoeYfkEYmcQQ/exec'
+        },
+
+        // ========================================
+        // N8N Webhook APIs (Legacy - Không sử dụng)
+        // ========================================
+        // Các endpoint này được giữ lại để tương thích ngược
+        // Hiện tại đang sử dụng Google Apps Script thay thế
+        ENDPOINTS: {
+            SKILLS: 'https://free-n8n.taikhoanai.store/webhook/get-skills',
+            ACTION_WORDS: 'https://free-n8n.taikhoanai.store/webhook/get-dongtu',
+            GEN_HINTS: 'https://free-n8n.taikhoanai.store/webhook/gen-hints',
+            GEN_ACTION_WORD: 'https://free-n8n.taikhoanai.store/webhook/gen-dongtu',
+            GEN_TAGS: 'https://free-n8n.taikhoanai.store/webhook/gen-the'
+        }
+    };
+
+    // ========================================
+    // Backward Compatibility
+    // ========================================
+    // Biến này được giữ lại để đảm bảo code cũ vẫn hoạt động
+    let = CONFIG.API_URL;
 
     const HEADER_REFERENCE = {
         QUESTION: 'Câu',
@@ -124,12 +184,154 @@ document.addEventListener('DOMContentLoaded', function () {
     const actionWordsTags = actionWordsMultiSelect.querySelector('.multi-select-tags');
     const actionWordsOptions = actionWordsMultiSelect.querySelector('.multi-select-options');
 
+    // Settings Modal elements
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsModalClose = document.getElementById('settingsModalClose');
+    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+    // Settings input fields
+    const settingsApiUrl = document.getElementById('settingsApiUrl');
+    const settingsGetSkills = document.getElementById('settingsGetSkills');
+    const settingsGetActionWords = document.getElementById('settingsGetActionWords');
+    const settingsGenHints = document.getElementById('settingsGenHints');
+    const settingsGenActionWord = document.getElementById('settingsGenActionWord');
+    const settingsGenTags = document.getElementById('settingsGenTags');
+
     // State variables
     let currentEditIndex = -1;
     let selectedSkills = [];
     let selectedActionWords = [];
     let skillsData = [];
     let actionWordsData = [];
+
+    // ============================================
+    // SETTINGS MANAGEMENT
+    // ============================================
+
+    // Default configuration values
+    const DEFAULT_CONFIG = {
+        API_URL: 'https://vercel-doc-to-json.vercel.app',
+        GOOGLE_SCRIPT: {
+            GET_SKILLS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
+            GET_ACTION_WORDS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
+            GEN_HINTS: 'https://script.google.com/macros/s/AKfycbyKeC02IbZk2t-qG5-3qTkFkcSyYj1Xamo0lqZTt9RU_Or9C_xWrO3KhE55HxhpMg3csA/exec',
+            GEN_ACTION_WORD: 'https://script.google.com/macros/s/AKfycbwDt4hWU_3XM7ovCyEPvsFvRJp3klDGOuqB2NldgPXqkjNam20ufPRfpyGrHuajKsjU/exec',
+            GEN_TAGS: 'https://script.google.com/macros/s/AKfycbzO8jbMsnqaqKULmC42IW-Mc_vMwrQYegQI9p0crXzImohVL97NBWob7WyoeYfkEYmcQQ/exec'
+        }
+    };
+
+    // Load settings from localStorage or use defaults
+    function loadSettings() {
+        const savedSettings = localStorage.getItem('apiSettings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                // Update CONFIG object
+                CONFIG.API_URL = settings.API_URL || DEFAULT_CONFIG.API_URL;
+                CONFIG.GOOGLE_SCRIPT.GET_SKILLS = settings.GOOGLE_SCRIPT?.GET_SKILLS || DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_SKILLS;
+                CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS = settings.GOOGLE_SCRIPT?.GET_ACTION_WORDS || DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS;
+                CONFIG.GOOGLE_SCRIPT.GEN_HINTS = settings.GOOGLE_SCRIPT?.GEN_HINTS || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_HINTS;
+                CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD = settings.GOOGLE_SCRIPT?.GEN_ACTION_WORD || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD;
+                CONFIG.GOOGLE_SCRIPT.GEN_TAGS = settings.GOOGLE_SCRIPT?.GEN_TAGS || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_TAGS;
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+    }
+
+    // Save settings to localStorage
+    function saveSettings() {
+        const settings = {
+            API_URL: CONFIG.API_URL,
+            GOOGLE_SCRIPT: {
+                GET_SKILLS: CONFIG.GOOGLE_SCRIPT.GET_SKILLS,
+                GET_ACTION_WORDS: CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS,
+                GEN_HINTS: CONFIG.GOOGLE_SCRIPT.GEN_HINTS,
+                GEN_ACTION_WORD: CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD,
+                GEN_TAGS: CONFIG.GOOGLE_SCRIPT.GEN_TAGS
+            }
+        };
+        localStorage.setItem('apiSettings', JSON.stringify(settings));
+    }
+
+    // Populate settings modal with current values
+    function populateSettingsModal() {
+        settingsApiUrl.value = CONFIG.API_URL;
+        settingsGetSkills.value = CONFIG.GOOGLE_SCRIPT.GET_SKILLS;
+        settingsGetActionWords.value = CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS;
+        settingsGenHints.value = CONFIG.GOOGLE_SCRIPT.GEN_HINTS;
+        settingsGenActionWord.value = CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD;
+        settingsGenTags.value = CONFIG.GOOGLE_SCRIPT.GEN_TAGS;
+    }
+
+    // Open settings modal
+    settingsBtn.addEventListener('click', () => {
+        populateSettingsModal();
+        settingsModal.style.display = 'flex';
+    });
+
+    // Close settings modal
+    function closeSettingsModal() {
+        settingsModal.style.display = 'none';
+    }
+
+    settingsModalClose.addEventListener('click', closeSettingsModal);
+    cancelSettingsBtn.addEventListener('click', closeSettingsModal);
+
+    // Save settings
+    saveSettingsBtn.addEventListener('click', () => {
+        // Update CONFIG object
+        CONFIG.API_URL = settingsApiUrl.value.trim() || DEFAULT_CONFIG.API_URL;
+        CONFIG.GOOGLE_SCRIPT.GET_SKILLS = settingsGetSkills.value.trim() || DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_SKILLS;
+        CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS = settingsGetActionWords.value.trim() || DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS;
+        CONFIG.GOOGLE_SCRIPT.GEN_HINTS = settingsGenHints.value.trim() || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_HINTS;
+        CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD = settingsGenActionWord.value.trim() || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD;
+        CONFIG.GOOGLE_SCRIPT.GEN_TAGS = settingsGenTags.value.trim() || DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_TAGS;
+
+        // Save to localStorage
+        saveSettings();
+
+        // Show success message
+        showSuccess('Đã lưu cấu hình thành công! Các API mới sẽ được sử dụng ngay lập tức.');
+
+        // Close modal
+        closeSettingsModal();
+    });
+
+    // Reset to default settings
+    resetSettingsBtn.addEventListener('click', () => {
+        if (confirm('Bạn có chắc chắn muốn khôi phục cấu hình mặc định? Tất cả các thay đổi sẽ bị mất.')) {
+            // Reset CONFIG to defaults
+            CONFIG.API_URL = DEFAULT_CONFIG.API_URL;
+            CONFIG.GOOGLE_SCRIPT.GET_SKILLS = DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_SKILLS;
+            CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS = DEFAULT_CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS;
+            CONFIG.GOOGLE_SCRIPT.GEN_HINTS = DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_HINTS;
+            CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD = DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD;
+            CONFIG.GOOGLE_SCRIPT.GEN_TAGS = DEFAULT_CONFIG.GOOGLE_SCRIPT.GEN_TAGS;
+
+            // Remove from localStorage
+            localStorage.removeItem('apiSettings');
+
+            // Update modal fields
+            populateSettingsModal();
+
+            // Show success message
+            showSuccess('Đã khôi phục cấu hình mặc định!');
+        }
+    });
+
+    // Close modal when clicking outside
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            closeSettingsModal();
+        }
+    });
+
+    // Load settings on page load
+    loadSettings();
 
     function stripHtmlAndCleanWhitespace(htmlString) {
         if (!htmlString || typeof htmlString !== 'string') {
@@ -190,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchJSONData() {
         try {
             // Fetch skills data
-            const skillsResponse = await fetch('https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec?action=get-skills');
+            const skillsResponse = await fetch(`${CONFIG.GOOGLE_SCRIPT.GET_SKILLS}?action=get-skills`);
             if (skillsResponse.ok) {
                 skillsData = await skillsResponse.json();
             } else {
@@ -208,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Fetch action words data
-            const actionWordsResponse = await fetch('https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec?action=get-dongtu');
+            const actionWordsResponse = await fetch(`${CONFIG.GOOGLE_SCRIPT.GET_ACTION_WORDS}?action=get-dongtu`);
             if (actionWordsResponse.ok) {
                 actionWordsData = await actionWordsResponse.json();
             } else {
@@ -385,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Convert images to base64 for API
             const imageDataArray = uploadedImages.map(img => img.dataUrl);
 
-            const response = await fetch(`${apiUrl}/recognize-image`, {
+            const response = await fetch(`${CONFIG.API_URL}/recognize-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -447,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showSuccess('Đang nhận diện câu hỏi từ text...');
 
         try {
-            const response = await fetch(`${apiUrl}/recognize-text`, {
+            const response = await fetch(`${CONFIG.API_URL}/recognize-text`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -572,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show loading state
         showSuccess('Đang xử lý file Word...');
 
-        fetch(`${apiUrl}/upload`, {
+        fetch(`${CONFIG.API_URL}/upload`, {
             method: 'POST',
             headers: {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -640,7 +842,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch("https://script.google.com/macros/s/AKfycbyKeC02IbZk2t-qG5-3qTkFkcSyYj1Xamo0lqZTt9RU_Or9C_xWrO3KhE55HxhpMg3csA/exec", requestOptions);
+            const response = await fetch(CONFIG.GOOGLE_SCRIPT.GEN_HINTS, requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -690,7 +892,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch("https://script.google.com/macros/s/AKfycbwDt4hWU_3XM7ovCyEPvsFvRJp3klDGOuqB2NldgPXqkjNam20ufPRfpyGrHuajKsjU/exec", requestOptions);
+            const response = await fetch(CONFIG.GOOGLE_SCRIPT.GEN_ACTION_WORD, requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -740,7 +942,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch("https://script.google.com/macros/s/AKfycbzO8jbMsnqaqKULmC42IW-Mc_vMwrQYegQI9p0crXzImohVL97NBWob7WyoeYfkEYmcQQ/exec", requestOptions);
+            const response = await fetch(CONFIG.GOOGLE_SCRIPT.GEN_TAGS, requestOptions);
 
             // Check if the response is OK and has a body
             if (!response.ok) {
@@ -3505,7 +3707,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch(`${apiUrl}/check-user`, {
+            const response = await fetch(`${CONFIG.API_URL}/check-user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, uiid })
@@ -3525,7 +3727,7 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error('Vui lòng nhập tài khoản và mật khẩu');
         }
 
-        const response = await fetch(`${apiUrl}/login-lms`, {
+        const response = await fetch(`${CONFIG.API_URL}/login-lms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ u: username, p: password })
@@ -3548,7 +3750,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const { token, uiid } = getUserCredentials();
 
-        const response = await fetch(`${apiUrl}/find-bank`, {
+        const response = await fetch(`${CONFIG.API_URL}/find-bank`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ link: bankLink, token, uiid })
@@ -3630,7 +3832,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log(`Uploading chunk ${i + 1}/${chunks.length} (${chunk.length} questions)...`);
 
             try {
-                const response = await fetch(`${apiUrl}/upload-questions`, {
+                const response = await fetch(`${CONFIG.API_URL}/upload-questions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ bankIid, token, uiid, questionsData: chunk })

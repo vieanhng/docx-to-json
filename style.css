@@ -2322,3 +2322,166 @@ table th {
         opacity: 0.5;
     }
 }
+
+/* ============================================ */
+/* SETTINGS STYLES */
+/* ============================================ */
+
+/* Header Layout */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Settings Button */
+.btn-settings {
+    background-color: white;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-300);
+    padding: 0.625rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-settings:hover {
+    background-color: var(--gray-50);
+    color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: var(--shadow);
+    transform: rotate(45deg);
+}
+
+.btn-settings i {
+    font-size: 1.125rem;
+}
+
+/* Settings Modal */
+.modal-settings {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-settings .modal-body {
+    max-height: calc(90vh - 180px);
+    overflow-y: auto;
+}
+
+/* Settings Section */
+.settings-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.settings-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 1rem;
+}
+
+.settings-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-section-title i {
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.settings-description {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+}
+
+/* Label Badge */
+.label-badge {
+    display: inline-block;
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* Settings Info Box */
+.settings-info {
+    background-color: rgba(79, 70, 229, 0.05);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+    border-radius: calc(var(--radius) - 0.25rem);
+    padding: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.settings-info i {
+    color: var(--primary);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.settings-info div {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+.settings-info strong {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+/* Responsive Design for Header */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .header-left {
+        width: 100%;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal-settings {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+}

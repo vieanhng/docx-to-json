@@ -14,8 +14,17 @@
 <body>
     <div class="container">
         <header>
-            <h1>Công cụ chuyển số hóa file Word</h1>
-            <p class="subtitle">Tải lên file Word và số hóa</p>
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>Công cụ chuyển số hóa file Word</h1>
+                    <p class="subtitle">Tải lên file Word và số hóa</p>
+                </div>
+                <div class="header-right">
+                    <button id="settingsBtn" class="btn-settings" title="Cấu hình API">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <div class="stats-container">
@@ -485,6 +494,112 @@
             <div class="modal-footer">
                 <button type="button" id="cancelEditBtn" class="btn-secondary">Hủy</button>
                 <button type="button" id="saveEditBtn" class="btn-primary">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content modal-settings">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-cog"></i>
+                    Cấu hình API
+                </h3>
+                <button class="modal-close" id="settingsModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-server"></i>
+                        API chính - Xử lý DOCX
+                    </h4>
+                    <p class="settings-description">
+                        API endpoint cho việc upload và convert file DOCX sang JSON, nhận diện từ ảnh và text
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label" for="settingsApiUrl">
+                            API URL
+                            <span class="label-badge">Endpoints: /upload, /recognize-image, /recognize-text</span>
+                        </label>
+                        <input type="text" id="settingsApiUrl" class="form-control"
+                            placeholder="https://vercel-doc-to-json.vercel.app">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-code"></i>
+                        Google Apps Script APIs
+                    </h4>
+                    <p class="settings-description">
+                        Các API endpoint cho việc lấy dữ liệu và tạo nội dung bằng AI
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label" for="settingsGetSkills">
+                            API lấy danh sách kỹ năng
+                            <span class="label-badge">GET ?action=get-skills</span>
+                        </label>
+                        <input type="text" id="settingsGetSkills" class="form-control"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="settingsGetActionWords">
+                            API lấy danh sách động từ hành động
+                            <span class="label-badge">GET ?action=get-dongtu</span>
+                        </label>
+                        <input type="text" id="settingsGetActionWords" class="form-control"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="settingsGenHints">
+                            API tạo gợi ý (hints)
+                            <span class="label-badge">POST {question_content}</span>
+                        </label>
+                        <input type="text" id="settingsGenHints" class="form-control"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="settingsGenActionWord">
+                            API tạo động từ hành động
+                            <span class="label-badge">POST {content, level, solution}</span>
+                        </label>
+                        <input type="text" id="settingsGenActionWord" class="form-control"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="settingsGenTags">
+                            API tạo tags
+                            <span class="label-badge">POST {content, level, solution}</span>
+                        </label>
+                        <input type="text" id="settingsGenTags" class="form-control"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+                </div>
+
+                <div class="settings-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Lưu ý:</strong> Cấu hình sẽ được lưu trong trình duyệt của bạn.
+                        Nhấn "Khôi phục mặc định" để quay về cấu hình gốc.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="resetSettingsBtn" class="btn-secondary">
+                    <i class="fas fa-undo"></i>
+                    Khôi phục mặc định
+                </button>
+                <button type="button" id="cancelSettingsBtn" class="btn-secondary">Hủy</button>
+                <button type="button" id="saveSettingsBtn" class="btn-primary">
+                    <i class="fas fa-save"></i>
+                    Lưu cấu hình
+                </button>
             </div>
         </div>
     </div>
