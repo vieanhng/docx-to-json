@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
         //   - POST /upload: Upload và convert file DOCX sang JSON
         //   - POST /recognize-image: Nhận diện câu hỏi từ ảnh
         //   - POST /recognize-text: Nhận diện câu hỏi từ văn bản
-        API_URL: 'https://vercel-doc-to-json.vercel.app',
+        API_URL: 'https://docx-to-json.nport.link',
 
         // ========================================
         // Google Apps Script APIs
