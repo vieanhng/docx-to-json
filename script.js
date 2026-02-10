@@ -132,6 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const batchGenerateActionWordsBtn = document.getElementById('batchGenerateActionWordsBtn');
     const batchGenerateTagsBtn = document.getElementById('batchGenerateTagsBtn');
     const batchAddTagsBtn = document.getElementById('batchAddTagsBtn');
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
 
     // Modal elements
     const editModal = document.getElementById('editModal');
@@ -1397,6 +1398,111 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             showErrors([`Lỗi khi kiểm tra trùng: ${error.message}`]);
             return false;
+        }
+    }
+
+    // Xóa câu hỏi
+    function deleteQuestion(index) {
+        try {
+            const jsonString = jsonEditor.value.trim();
+            if (!jsonString) {
+                showErrors(['Không có dữ liệu để xóa']);
+                return;
+            }
+
+            const parsedData = JSON.parse(jsonString);
+
+            if (!Array.isArray(parsedData)) {
+                showErrors(['Dữ liệu không phải là một mảng']);
+                return;
+            }
+
+            if (index < 0 || index >= parsedData.length) {
+                showErrors(['Chỉ số câu hỏi không hợp lệ']);
+                return;
+            }
+
+            // Hiển thị xác nhận
+            const questionPreview = parsedData[index].question
+                ? stripHtmlAndCleanWhitespace(parsedData[index].question).substring(0, 50)
+                : 'Không có nội dung';
+
+            if (confirm(`Bạn có chắc chắn muốn xóa câu hỏi ${index + 1}?\n\n"${questionPreview}..."`)) {
+                // Xóa câu hỏi
+                parsedData.splice(index, 1);
+
+                // Cập nhật JSON editor
+                jsonEditor.value = JSON.stringify(parsedData, null, 2);
+
+                // Cập nhật preview
+                updatePreview();
+
+                // Hiển thị thông báo thành công
+                showSuccess(`✅ Đã xóa câu hỏi ${index + 1}`);
+
+                console.log(`🗑️ Đã xóa câu hỏi ${index + 1}. Còn lại ${parsedData.length} câu hỏi`);
+            }
+        } catch (error) {
+            showErrors([`Lỗi khi xóa câu hỏi: ${error.message}`]);
+        }
+    }
+
+    // Xóa nhiều câu hỏi đã chọn
+    function batchDeleteQuestions() {
+        try {
+            const jsonString = jsonEditor.value.trim();
+            if (!jsonString) {
+                showErrors(['Không có dữ liệu']);
+                return;
+            }
+
+            const parsedData = JSON.parse(jsonString);
+
+            if (!Array.isArray(parsedData)) {
+                showErrors(['Dữ liệu không phải là một mảng']);
+                return;
+            }
+
+            // Lấy danh sách câu hỏi đã chọn
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+
+            if (selectedCheckboxes.length === 0) {
+                showWarnings(['Vui lòng chọn ít nhất một câu hỏi để xóa']);
+                return;
+            }
+
+            // Lấy danh sách index cần xóa (sắp xếp giảm dần để xóa từ cuối lên)
+            const indicesToDelete = Array.from(selectedCheckboxes)
+                .map(checkbox => parseInt(checkbox.dataset.index))
+                .sort((a, b) => b - a); // Sắp xếp giảm dần
+
+            // Hiển thị xác nhận
+            const count = indicesToDelete.length;
+            const message = count === 1
+                ? `Bạn có chắc chắn muốn xóa 1 câu hỏi đã chọn?`
+                : `Bạn có chắc chắn muốn xóa ${count} câu hỏi đã chọn?`;
+
+            if (confirm(message)) {
+                // Xóa các câu hỏi (từ cuối lên để không ảnh hưởng index)
+                indicesToDelete.forEach(index => {
+                    if (index >= 0 && index < parsedData.length) {
+                        parsedData.splice(index, 1);
+                    }
+                });
+
+                // Cập nhật JSON editor
+                jsonEditor.value = JSON.stringify(parsedData, null, 2);
+
+                // Cập nhật preview
+                updatePreview();
+
+                // Hiển thị thông báo thành công
+                showSuccess(`✅ Đã xóa ${count} câu hỏi. Còn lại ${parsedData.length} câu hỏi`);
+
+                console.log(`🗑️ Đã xóa ${count} câu hỏi. Còn lại ${parsedData.length} câu hỏi`);
+            }
+        } catch (error) {
+            showErrors([`Lỗi khi xóa câu hỏi: ${error.message}`]);
         }
     }
 
@@ -3295,9 +3401,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <span class="preview-type">${item.type || 'Không xác định'}</span>
                                     </div>
                                 </div>
-                                <button class="btn-edit" data-index="${index}">
-                                    <i class="fas fa-edit"></i> Sửa câu hỏi
-                                </button>
+                                <div class="preview-actions">
+                                    <button class="btn-edit" data-index="${index}">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <button class="btn-delete" data-index="${index}">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </div>
                             </div>
                             <div class="preview-content">
                                 <div class="preview-question">
@@ -3566,6 +3677,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     openEditModal(index);
                 });
             });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.btn-delete').forEach(button => {
+                button.addEventListener('click', function () {
+                    const index = parseInt(this.dataset.index);
+                    deleteQuestion(index);
+                });
+            });
         } catch (error) {
             previewContainer.innerHTML = `
                         <div class="empty-state">
@@ -3625,6 +3744,7 @@ document.addEventListener('DOMContentLoaded', function () {
     batchGenerateActionWordsBtn.addEventListener('click', batchGenerateActionWords);
     batchGenerateTagsBtn.addEventListener('click', batchGenerateTags);
     batchAddTagsBtn.addEventListener('click', batchAddTags);
+    batchDeleteBtn.addEventListener('click', batchDeleteQuestions);
 
     // Modal event listeners
     document.querySelectorAll('.modal-close').forEach(button => {
