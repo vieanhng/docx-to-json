@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const previewContainer = document.getElementById('previewContainer');
     const formatBtn = document.getElementById('formatBtn');
     const applyBtn = document.getElementById('applyBtn');
+    const checkDuplicatesBtn = document.getElementById('checkDuplicatesBtn');
     const mathToggle = document.getElementById('mathToggle');
     const selectAllBtn = document.getElementById('selectAllBtn');
     const toggleEditorBtn = document.getElementById('toggleEditorBtn');
@@ -1360,6 +1361,42 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Kiểm tra câu hỏi trùng lặp
+    function checkDuplicates() {
+        try {
+            const jsonString = jsonEditor.value.trim();
+            if (!jsonString) {
+                showErrors(['Vui lòng nhập dữ liệu JSON']);
+                return;
+            }
+
+            const parsedData = JSON.parse(jsonString);
+
+            if (!Array.isArray(parsedData)) {
+                showErrors(['Dữ liệu không phải là một mảng']);
+                return;
+            }
+
+            const duplicates = checkDuplicateQuestions(parsedData);
+
+            if (duplicates.length > 0) {
+                const warnings = [];
+                duplicates.forEach(dup => {
+                    warnings.push(`Câu hỏi ${dup.indices.join(', ')} có nội dung trùng nhau: "${dup.content.substring(0, 80)}..."`);
+                });
+                showWarnings(warnings);
+
+                // Hiển thị thông tin tổng hợp
+                const totalDuplicates = duplicates.reduce((sum, dup) => sum + dup.indices.length, 0);
+                console.log(`🔍 Tìm thấy ${duplicates.length} nhóm câu hỏi trùng lặp, tổng ${totalDuplicates} câu hỏi bị trùng`);
+            } else {
+                showSuccess('✅ Không tìm thấy câu hỏi trùng lặp!');
+            }
+        } catch (error) {
+            showErrors([`Lỗi khi kiểm tra trùng: ${error.message}`]);
+        }
+    }
+
     // Validate dữ liệu
     function validateData(data) {
         const errors = [];  // Lỗi nghiêm trọng: các trường bắt buộc bị thiếu
@@ -1436,6 +1473,50 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         return { errors, warnings };
+    }
+
+    // Kiểm tra trùng nội dung câu hỏi
+    function checkDuplicateQuestions(data) {
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        const duplicates = [];
+        const contentMap = new Map(); // Map để lưu nội dung đã chuẩn hóa và các index tương ứng
+
+        data.forEach((item, index) => {
+            if (!item.question) {
+                return;
+            }
+
+            // Chuẩn hóa nội dung câu hỏi: loại bỏ HTML tags và khoảng trắng thừa
+            const normalizedContent = stripHtmlAndCleanWhitespace(item.question);
+
+            if (!normalizedContent) {
+                return;
+            }
+
+            // Kiểm tra xem nội dung này đã tồn tại chưa
+            if (contentMap.has(normalizedContent)) {
+                // Nếu đã tồn tại, thêm index hiện tại vào danh sách
+                contentMap.get(normalizedContent).push(index + 1); // +1 để hiển thị số thứ tự từ 1
+            } else {
+                // Nếu chưa tồn tại, tạo mới
+                contentMap.set(normalizedContent, [index + 1]);
+            }
+        });
+
+        // Lọc ra những nội dung có nhiều hơn 1 câu hỏi
+        contentMap.forEach((indices, content) => {
+            if (indices.length > 1) {
+                duplicates.push({
+                    content: content,
+                    indices: indices
+                });
+            }
+        });
+
+        return duplicates;
     }
 
     // Select all questions
@@ -3528,6 +3609,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
+
+    // Event listener for check duplicates button
+    checkDuplicatesBtn.addEventListener('click', checkDuplicates);
+
     mathToggle.addEventListener('change', updatePreview);
     selectAllBtn.addEventListener('click', selectAllQuestions);
 
@@ -3770,8 +3855,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return new Blob([str]).size;
     }
 
-    // Helper: Split questions into chunks that fit within size limit
-    function splitQuestionsIntoChunks(questionsData, maxSizeBytes = 3.5 * 1024 * 1024) {
+    // Helper: Split questions into chunks that fit within size and count limits
+    function splitQuestionsIntoChunks(questionsData, maxSizeBytes = 4 * 1024 * 1024, maxQuestionsPerBatch = 20) {
         const { token, uiid } = getUserCredentials();
         const bankIid = localStorage.getItem('bank_iid');
 
@@ -3787,8 +3872,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const question = questionsData[i];
             const questionSize = getByteSize(JSON.stringify(question));
 
-            // Check if adding this question would exceed the limit
-            if (currentSize + questionSize > maxSizeBytes && currentChunk.length > 0) {
+            // Check if adding this question would exceed the size limit OR question count limit
+            const wouldExceedSize = currentSize + questionSize > maxSizeBytes;
+            const wouldExceedCount = currentChunk.length >= maxQuestionsPerBatch;
+
+            if ((wouldExceedSize || wouldExceedCount) && currentChunk.length > 0) {
                 // Save current chunk and start a new one
                 chunks.push([...currentChunk]);
                 currentChunk = [question];
@@ -3847,8 +3935,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 totalUploaded += chunk.length;
                 results.push(data);
 
-                // Show progress
-                showSuccess(`Đã tải lên ${totalUploaded}/${questionsData.length} câu hỏi...`);
+                setTimeout(() => {
+                    showSuccess(`Đã tải lên ${totalUploaded}/${questionsData.length} câu hỏi...`);
+                }, 2000);
 
             } catch (error) {
                 throw new Error(`Lỗi tại chunk ${i + 1}/${chunks.length}: ${error.message}`);
