@@ -1389,11 +1389,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Hiển thị thông tin tổng hợp
                 const totalDuplicates = duplicates.reduce((sum, dup) => sum + dup.indices.length, 0);
                 console.log(`🔍 Tìm thấy ${duplicates.length} nhóm câu hỏi trùng lặp, tổng ${totalDuplicates} câu hỏi bị trùng`);
+                return false;
             } else {
                 showSuccess('✅ Không tìm thấy câu hỏi trùng lặp!');
+                return true;
             }
         } catch (error) {
             showErrors([`Lỗi khi kiểm tra trùng: ${error.message}`]);
+            return false;
         }
     }
 
@@ -3955,6 +3958,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event: Open digitize modal
     digitizeBtn.addEventListener('click', async () => {
+
+        if (checkDuplicateQuestions().length > 0) {
+            checkDuplicates();
+            return;
+        }
+
         // Open modal first
         openDigitizeModal();
 
