@@ -2033,7 +2033,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const div = document.createElement('div');
                             div.className = 'form-check';
                             div.innerHTML = `
-                                        <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${label}" id="correctAnswer${i}" ${isChecked ? 'checked' : ''}>
+                                        <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${label}" id="correctAnswer${i}" data-index="${i}" ${isChecked ? 'checked' : ''}>
                                         <label class="form-check-label" for="correctAnswer${i}">${label}</label>
                                     `;
                             correctAnswersContainer.appendChild(div);
@@ -2079,7 +2079,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const div = document.createElement('div');
                             div.className = 'form-check';
                             div.innerHTML = `
-                                        <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${label}" id="correctAnswerTF${i}" ${isChecked ? 'checked' : ''}>
+                                        <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${label}" id="correctAnswerTF${i}" data-index="${i}" ${isChecked ? 'checked' : ''}>
                                         <label class="form-check-label" for="correctAnswerTF${i}">${label}</label>
                                     `;
                             correctAnswersContainerTF.appendChild(div);
@@ -2287,7 +2287,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Get correct answers
                 const correctAnswerCheckboxes = document.querySelectorAll('.correct-answer-checkbox:checked');
                 const correctAnswer = Array.from(correctAnswerCheckboxes).map(cb => cb.value);
-                const correctIndex = correctAnswer.map(answer => options.indexOf(answer));
+                const correctIndex = [];
+                correctAnswerCheckboxes.forEach(cb => {
+                    correctIndex.push(parseInt(cb.dataset.index));
+                });
                 updatedQuestion.options = options;
                 updatedQuestion.correctAnswer = correctAnswer;
                 updatedQuestion.correctIndex = correctIndex;
@@ -2300,9 +2303,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Get correct answers
                 const correctAnswerCheckboxes = document.querySelectorAll('.correct-answer-checkbox-tf:checked');
                 const correctAnswer = Array.from(correctAnswerCheckboxes).map(cb => cb.value);
+                const correctIndex = [];
+                correctAnswerCheckboxes.forEach(cb => {
+                    correctIndex.push(parseInt(cb.dataset.index));
+                });
 
                 updatedQuestion.statements = statements;
                 updatedQuestion.correctAnswer = correctAnswer;
+                updatedQuestion.correctIndex = correctIndex;
             }
             else if (type === 'SA') {
                 const answer = [];
@@ -2394,7 +2402,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const div = document.createElement('div');
             div.className = 'form-check';
             div.innerHTML = `
-                        <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${optionLabels[optionIndex]}" id="correctAnswer${optionIndex}">
+                        <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${optionLabels[optionIndex]}" id="correctAnswer${optionIndex}" data-index="${optionIndex}">
                         <label class="form-check-label" for="correctAnswer${optionIndex}">${optionLabels[optionIndex]}</label>
                     `;
             correctAnswersContainer.appendChild(div);
@@ -2429,7 +2437,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const div = document.createElement('div');
                 div.className = 'form-check';
                 div.innerHTML = `
-                            <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${label}" id="correctAnswer${i}">
+                            <input class="form-check-input correct-answer-checkbox" type="checkbox" value="${label}" id="correctAnswer${i}" data-index="${i}">
                             <label class="form-check-label" for="correctAnswer${i}">${label}</label>
                         `;
                 correctAnswersContainer.appendChild(div);
@@ -2458,7 +2466,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const div = document.createElement('div');
             div.className = 'form-check';
             div.innerHTML = `
-                        <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${statementLabels[statementIndex]}" id="correctAnswerTF${statementIndex}">
+                        <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${statementLabels[statementIndex]}" id="correctAnswerTF${statementIndex}" data-index="${statementIndex}">
                         <label class="form-check-label" for="correctAnswerTF${statementIndex}">${statementLabels[statementIndex]}</label>
                     `;
             correctAnswersContainerTF.appendChild(div);
@@ -2493,7 +2501,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const div = document.createElement('div');
                 div.className = 'form-check';
                 div.innerHTML = `
-                            <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${label}" id="correctAnswerTF${i}">
+                            <input class="form-check-input correct-answer-checkbox-tf" type="checkbox" value="${label}" id="correctAnswerTF${i}" data-index="${i}">
                             <label class="form-check-label" for="correctAnswerTF${i}">${label}</label>
                         `;
                 correctAnswersContainerTF.appendChild(div);
