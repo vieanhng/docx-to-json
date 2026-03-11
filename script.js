@@ -2287,9 +2287,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Get correct answers
                 const correctAnswerCheckboxes = document.querySelectorAll('.correct-answer-checkbox:checked');
                 const correctAnswer = Array.from(correctAnswerCheckboxes).map(cb => cb.value);
-
+                const correctIndex = correctAnswer.map(answer => options.indexOf(answer));
                 updatedQuestion.options = options;
                 updatedQuestion.correctAnswer = correctAnswer;
+                updatedQuestion.correctIndex = correctIndex;
             }
             else if (type === 'TF') {
                 // Get statements
