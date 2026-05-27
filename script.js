@@ -3059,9 +3059,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             <span class="preview-type">${item.type || 'Không xác định'}</span>
                         </div>
                     </div>
+
+                    <div class="preview-actions">
                     <button class="btn-edit" data-index="${index}">
-                        <i class="fas fa-edit"></i> Sửa câu hỏi
+                        <i class="fas fa-edit"></i> Sửa
                     </button>
+                    <button class="btn-delete" data-index="${index}">
+                        <i class="fas fa-trash"></i> Xóa
+                    </button>
+                </div>
                 </div>
                 <div class="preview-content">
                     <div class="preview-question">
