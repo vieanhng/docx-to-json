@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Default configuration values
     const DEFAULT_CONFIG = {
-        API_URL: 'https://docx-to-json.nport.link',
+        API_URL: 'https://docx-to-json.octopuslab.io.vn',
         GOOGLE_SCRIPT: {
             GET_SKILLS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
             GET_ACTION_WORDS: 'https://script.google.com/macros/s/AKfycbwqUpCtNPJ9sC7jiXQr5_S1l4ZtKjkkrhZCLQuqdTCAZpnwjLDepexUGgtBsEwsM9dK/exec',
